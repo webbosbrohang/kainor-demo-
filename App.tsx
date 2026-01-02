@@ -534,7 +534,7 @@ const MenuView: React.FC<MenuViewProps> = ({ activeCategory, setActiveCategory, 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search menu..."
-                    className="bg-transparent border-none outline-none ml-2 text-sm w-full font-medium text-gray-700 placeholder-gray-400"
+                    className="bg-transparent border-none outline-none ml-2 text-base w-full font-medium text-gray-700 placeholder-gray-400"
                   />
                   {searchQuery && (
                     <button onClick={() => setSearchQuery("")}>
@@ -767,10 +767,11 @@ const App = () => {
     setShowCheckoutConfirm(true);
   };
 
-  const handleConfirmOrder = () => {
+  const handleConfirmOrder = async () => {
     const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const orderId = `ORD-${Math.floor(Math.random() * 10000)}`;
     const newOrder: OrderHistoryItem = {
-        id: `ORD-${Math.floor(Math.random() * 10000)}`,
+        id: orderId,
         date: new Date().toISOString(),
         total: total,
         items: cartItems.map(item => `${item.quantity}x ${item.name}`),
@@ -778,6 +779,38 @@ const App = () => {
         customerName: 'Coffee Lover'
     };
     
+    // --- TELEGRAM NOTIFICATION LOGIC ---
+    const telegramBotToken = '8409323996:AAHHvwR01FBpxAwR47jx4syId5_j3SD-0p4';
+    const telegramChatId = '-5200077567';
+    
+    // Construct the message text
+    const itemsList = cartItems.map(item => 
+        `- ${item.quantity}x ${item.name} (Sugar: ${item.customization.sugarLevel})`
+    ).join('\n');
+
+    const message = `<b>🔔 New Order Received!</b>\n\n` +
+                    `<b>ID:</b> ${orderId}\n` +
+                    `<b>Customer:</b> ${newOrder.customerName}\n` +
+                    `<b>Total:</b> $${total.toFixed(2)}\n\n` +
+                    `<b>Items:</b>\n${itemsList}`;
+
+    try {
+        await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                chat_id: telegramChatId,
+                text: message,
+                parse_mode: 'HTML'
+            })
+        });
+    } catch (error) {
+        console.error("Failed to send Telegram notification:", error);
+    }
+    // -----------------------------------
+
     setOrders(prev => [newOrder, ...prev]);
 
     setShowCheckoutConfirm(false);

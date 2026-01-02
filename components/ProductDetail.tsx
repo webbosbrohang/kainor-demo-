@@ -1,6 +1,41 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Heart, Minus, Plus, Leaf, Sun, Zap, Candy, Check } from 'lucide-react';
+import { ArrowLeft, Heart, Minus, Plus, Check } from 'lucide-react';
 import { Product } from '../types';
+
+// Custom Crutch Icon Component
+// Replicates the flat vector design provided: Rounded top cap, parallel struts, handle, converging lower body, and tip.
+const Crutch = ({ size = 24, className, ...props }: any) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="currentColor"
+    className={className}
+    {...props}
+  >
+    <g transform="rotate(45 12 12)">
+      {/* Top Pad (Red part in image) */}
+      <path d="M7 2.5C7 1.67 7.67 1 8.5 1H15.5C16.33 1 17 1.67 17 2.5V4.5H7V2.5Z" />
+      
+      {/* Upper Struts (Yellow bars) */}
+      <rect x="8" y="5.5" width="2" height="9" />
+      <rect x="14" y="5.5" width="2" height="9" />
+      
+      {/* Handle (Crossbar) */}
+      <rect x="7" y="8" width="10" height="2.5" rx="0.5" />
+      
+      {/* Convergence (Where struts meet leg) */}
+      <path d="M8 13.5H16L13.5 18H10.5L8 13.5Z" />
+      
+      {/* Bottom Stick */}
+      <rect x="11" y="17" width="2" height="4" />
+      
+      {/* Tip (Rubber foot) - using opacity to distinguish it visually if monochrome */}
+      <path d="M10.5 21H13.5V22.5C13.5 23.3 12.8 24 12 24C11.2 24 10.5 23.3 10.5 22.5V21Z" fillOpacity="0.6" />
+    </g>
+  </svg>
+);
 
 interface ProductDetailProps {
   product: Product;
@@ -10,12 +45,19 @@ interface ProductDetailProps {
 
 type SugarLevel = '0%' | '25%' | '50%' | '75%' | '100%';
 
-const SUGAR_OPTIONS: { value: SugarLevel; icon: React.FC<any>; label: string; color: string; size?: number; bgColor: string }[] = [
-  { value: '0%', icon: Leaf, label: '0%', color: 'text-green-600', bgColor: 'bg-green-50' },
-  { value: '25%', icon: Sun, label: '25%', color: 'text-amber-500', bgColor: 'bg-amber-50' },
-  { value: '50%', icon: Heart, label: '50%', color: 'text-rose-500', bgColor: 'bg-rose-50' },
-  { value: '75%', icon: Zap, label: '75%', color: 'text-violet-500', bgColor: 'bg-violet-50' },
-  { value: '100%', icon: Candy, label: '100%', color: 'text-orange-500', bgColor: 'bg-orange-50', size: 28 },
+const SUGAR_OPTIONS: { 
+    value: SugarLevel; 
+    icon: React.FC<any>; 
+    label: string; 
+    color: string; 
+    bgColor: string;
+    borderColor: string;
+}[] = [
+  { value: '0%', icon: Crutch, label: '0%', color: 'text-emerald-500', bgColor: 'bg-emerald-50', borderColor: 'border-emerald-200' },
+  { value: '25%', icon: Crutch, label: '25%', color: 'text-lime-500', bgColor: 'bg-lime-50', borderColor: 'border-lime-200' },
+  { value: '50%', icon: Crutch, label: '50%', color: 'text-yellow-500', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200' },
+  { value: '75%', icon: Crutch, label: '75%', color: 'text-orange-500', bgColor: 'bg-orange-50', borderColor: 'border-orange-200' },
+  { value: '100%', icon: Crutch, label: '100%', color: 'text-red-500', bgColor: 'bg-red-50', borderColor: 'border-red-200' },
 ];
 
 export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToCart }) => {
@@ -79,7 +121,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, o
           {/* Sugar Level */}
           <div className="mb-8">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-gray-800">Sugar Level</h3>
+              <h3 className="font-bold text-gray-800">Sugar Level (Risk Scale)</h3>
               <span className="text-xs font-semibold bg-gray-100 text-gray-600 px-2 py-1 rounded-md">Required</span>
             </div>
             <div className="grid grid-cols-5 gap-3">
@@ -91,16 +133,15 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, o
                     onClick={() => setSugarLevel(option.value)}
                     className={`flex flex-col items-center justify-center py-3 px-1 rounded-2xl border transition-all duration-300 ${
                       isSelected 
-                        ? `${option.bgColor} border-${option.color.split('-')[1]}-200 shadow-md scale-105` 
+                        ? `${option.bgColor} ${option.borderColor} shadow-md scale-105` 
                         : 'bg-white border-transparent hover:bg-gray-50 hover:scale-105'
                     }`}
                   >
                     <div className={`mb-2 transition-all duration-300 ${isSelected ? option.color : 'text-gray-300'} ${isSelected ? 'scale-110 drop-shadow-sm' : ''}`}>
                       <option.icon 
-                        size={option.size || 22} 
-                        strokeWidth={isSelected ? 2.5 : 2} 
-                        fill={isSelected && option.value !== '0%' ? "currentColor" : "none"} 
-                        fillOpacity={0.2} 
+                        size={28}
+                        // Removed fillOpacity from here to let the SVG handle internal opacity if needed, 
+                        // and ensure solid color when selected.
                       />
                     </div>
                     <span className={`text-[10px] font-bold text-center transition-colors ${isSelected ? 'text-gray-900' : 'text-gray-400'}`}>
