@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Home, Coffee, User, MapPin, Search, ShoppingBag, Minus, Plus, X, Check, Lock, LayoutDashboard, Package, ListChecks, LogOut, Edit2, Trash2, Save, Image as ImageIcon } from 'lucide-react';
+import { Home, Coffee, User, MapPin, Search, ShoppingBag, Minus, Plus, X, Check, Lock, LayoutDashboard, Package, ListChecks, LogOut, Edit2, Trash2, Save, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { MENU_DATA, MOCK_HISTORY } from './constants';
 import { Product, Category, OrderHistoryItem, OrderStatus } from './types';
 import { MenuItem } from './components/MenuItem';
@@ -215,7 +215,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ menuData, setMenuData, 
                                             <span className="font-bold text-gray-900">{order.id}</span>
                                             <span className="text-xs text-gray-400">{new Date(order.date).toLocaleDateString()}</span>
                                         </div>
-                                        <p className="text-sm font-medium text-gray-600 mt-1">{order.customerName || 'Walk-in Customer'}</p>
+                                        <p className="text-sm font-medium text-gray-600 mt-1">{order.customerName || 'Walk-in Customer'} {order.tableNumber && <span className="text-brand-yellow bg-yellow-50 px-2 py-0.5 rounded-full ml-2 border border-yellow-100">Table {order.tableNumber}</span>}</p>
                                     </div>
                                     <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${statusColors[order.status]}`}>
                                         {order.status}
@@ -732,6 +732,8 @@ const App = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [showCheckoutConfirm, setShowCheckoutConfirm] = useState(false);
   const [showOrderSuccess, setShowOrderSuccess] = useState(false);
+  const [selectedTable, setSelectedTable] = useState<number | null>(null);
+  const [isProcessingOrder, setIsProcessingOrder] = useState(false);
   
   // Admin & Data State
   const [menuData, setMenuData] = useState<Category[]>(MENU_DATA);
@@ -768,6 +770,12 @@ const App = () => {
   };
 
   const handleConfirmOrder = async () => {
+    if (!selectedTable || isProcessingOrder) {
+        return; 
+    }
+
+    setIsProcessingOrder(true);
+
     const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const orderId = `ORD-${Math.floor(Math.random() * 10000)}`;
     const newOrder: OrderHistoryItem = {
@@ -776,7 +784,8 @@ const App = () => {
         total: total,
         items: cartItems.map(item => `${item.quantity}x ${item.name}`),
         status: 'pending',
-        customerName: 'Coffee Lover'
+        customerName: 'Coffee Lover',
+        tableNumber: selectedTable
     };
     
     // --- TELEGRAM NOTIFICATION LOGIC ---
@@ -791,6 +800,7 @@ const App = () => {
     const message = `<b>🔔 New Order Received!</b>\n\n` +
                     `<b>ID:</b> ${orderId}\n` +
                     `<b>Customer:</b> ${newOrder.customerName}\n` +
+                    `<b>Table:</b> ${selectedTable}\n` +
                     `<b>Total:</b> $${total.toFixed(2)}\n\n` +
                     `<b>Items:</b>\n${itemsList}`;
 
@@ -816,6 +826,8 @@ const App = () => {
     setShowCheckoutConfirm(false);
     setShowOrderSuccess(true);
     setCartItems([]);
+    setSelectedTable(null); // Reset table selection
+    setIsProcessingOrder(false); // Enable again
     setTimeout(() => {
         setShowOrderSuccess(false);
         setActiveTab('home');
@@ -942,7 +954,7 @@ const App = () => {
       {/* Checkout Confirmation Modal */}
       {showCheckoutConfirm && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl scale-100 animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
+            <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl scale-100 animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
                 <div className="flex flex-col items-center text-center mb-4 shrink-0">
                     <div className="w-16 h-16 bg-brand-yellow/20 text-yellow-600 rounded-full flex items-center justify-center mb-4">
                         <ShoppingBag size={32} />
@@ -953,7 +965,7 @@ const App = () => {
                     </p>
                 </div>
 
-                <div className="flex-1 overflow-y-auto mb-6 bg-gray-50 rounded-xl p-3 border border-gray-100">
+                <div className="flex-1 overflow-y-auto mb-4 bg-gray-50 rounded-xl p-3 border border-gray-100">
                   <ul className="space-y-3">
                     {cartItems.map((item) => (
                       <li key={item.cartId} className="flex justify-between items-start text-sm">
@@ -981,6 +993,27 @@ const App = () => {
                   </div>
                 </div>
 
+                {/* Table Selection */}
+                <div className="mb-6 shrink-0">
+                    <h3 className="font-bold text-gray-800 mb-2 text-sm">Select Table Number <span className="text-red-500">*</span></h3>
+                    <div className="grid grid-cols-5 gap-2">
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                            <button
+                                key={num}
+                                onClick={() => setSelectedTable(num)}
+                                className={`py-2 rounded-lg font-bold text-sm transition-all duration-200 ${
+                                    selectedTable === num
+                                        ? 'bg-brand-yellow text-white shadow-md scale-105'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                }`}
+                            >
+                                {num}
+                            </button>
+                        ))}
+                    </div>
+                    {!selectedTable && <p className="text-xs text-red-400 mt-2 text-center">Please select a table to proceed</p>}
+                </div>
+
                 <div className="flex gap-3 shrink-0">
                     <button 
                         onClick={() => setShowCheckoutConfirm(false)}
@@ -990,9 +1023,19 @@ const App = () => {
                     </button>
                     <button 
                         onClick={handleConfirmOrder}
-                        className="flex-1 py-3 rounded-xl font-bold text-white bg-brand-yellow hover:bg-yellow-400 shadow-lg shadow-yellow-200 transition-colors"
+                        disabled={!selectedTable || isProcessingOrder}
+                        className={`flex-1 py-3 rounded-xl font-bold text-white transition-colors shadow-lg flex items-center justify-center gap-2 ${
+                            selectedTable && !isProcessingOrder
+                                ? 'bg-brand-yellow hover:bg-yellow-400 shadow-yellow-200 cursor-pointer' 
+                                : 'bg-gray-300 cursor-not-allowed shadow-gray-200'
+                        }`}
                     >
-                        Confirm
+                         {isProcessingOrder ? (
+                             <>
+                                <div className="w-4 h-4 border-2 border-white/80 border-t-transparent rounded-full animate-spin"></div>
+                                <span>Processing...</span>
+                             </>
+                        ) : 'Confirm'}
                     </button>
                 </div>
             </div>
@@ -1006,9 +1049,10 @@ const App = () => {
                 <Check size={48} strokeWidth={3} />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Order Placed!</h2>
-            <p className="text-gray-500 text-center max-w-xs">
-                Your order has been successfully placed. We'll start brewing immediately!
+            <p className="text-gray-500 text-center max-w-xs mb-1">
+                Your order has been sent to the kitchen.
             </p>
+            <p className="font-bold text-brand-yellow">Table {orders[0]?.tableNumber}</p>
         </div>
       )}
 

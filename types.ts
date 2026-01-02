@@ -23,4 +23,5 @@ export interface OrderHistoryItem {
   items: string[];
   status: OrderStatus;
   customerName?: string;
+  tableNumber?: number;
 }

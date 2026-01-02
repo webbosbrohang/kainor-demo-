@@ -52,12 +52,13 @@ const SUGAR_OPTIONS: {
     color: string; 
     bgColor: string;
     borderColor: string;
+    joke: string;
 }[] = [
-  { value: '0%', icon: Crutch, label: '0%', color: 'text-emerald-500', bgColor: 'bg-emerald-50', borderColor: 'border-emerald-200' },
-  { value: '25%', icon: Crutch, label: '25%', color: 'text-lime-500', bgColor: 'bg-lime-50', borderColor: 'border-lime-200' },
-  { value: '50%', icon: Crutch, label: '50%', color: 'text-yellow-500', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200' },
-  { value: '75%', icon: Crutch, label: '75%', color: 'text-orange-500', bgColor: 'bg-orange-50', borderColor: 'border-orange-200' },
-  { value: '100%', icon: Crutch, label: '100%', color: 'text-red-500', bgColor: 'bg-red-50', borderColor: 'border-red-200' },
+  { value: '0%', icon: Crutch, label: '0%', color: 'text-emerald-500', bgColor: 'bg-emerald-50', borderColor: 'border-emerald-200', joke: "Healthy (Boring)" },
+  { value: '25%', icon: Crutch, label: '25%', color: 'text-lime-500', bgColor: 'bg-lime-50', borderColor: 'border-lime-200', joke: "Safe Zone" },
+  { value: '50%', icon: Crutch, label: '50%', color: 'text-yellow-500', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200', joke: "Good Choice" },
+  { value: '75%', icon: Crutch, label: '75%', color: 'text-orange-500', bgColor: 'bg-orange-50', borderColor: 'border-orange-200', joke: "Sweet Baby" },
+  { value: '100%', icon: Crutch, label: '100%', color: 'text-red-500', bgColor: 'bg-red-50', borderColor: 'border-red-200', joke: "លីហ្សា? 👩‍🦽" },
 ];
 
 export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToCart }) => {
@@ -78,6 +79,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, o
   };
 
   const subtotal = (product.price * quantity).toFixed(2);
+  const selectedOption = SUGAR_OPTIONS.find(opt => opt.value === sugarLevel);
 
   // Fallback description if none exists
   const description = product.description || `${product.name} is a delicious choice from our menu, freshly prepared with high-quality ingredients to brighten your day.`;
@@ -121,9 +123,14 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, o
           {/* Sugar Level */}
           <div className="mb-8">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-gray-800">Sugar Level (Risk Scale)</h3>
-              <span className="text-xs font-semibold bg-gray-100 text-gray-600 px-2 py-1 rounded-md">Required</span>
+              <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-gray-800">Sugar Level</h3>
+              </div>
+              <div className={`text-xs font-bold px-3 py-1 rounded-full border transition-all duration-300 ${selectedOption?.bgColor} ${selectedOption?.color} ${selectedOption?.borderColor} shadow-sm`}>
+                {selectedOption?.joke}
+              </div>
             </div>
+            
             <div className="grid grid-cols-5 gap-3">
               {SUGAR_OPTIONS.map((option) => {
                 const isSelected = sugarLevel === option.value;
@@ -131,26 +138,35 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, o
                   <button
                     key={option.value}
                     onClick={() => setSugarLevel(option.value)}
-                    className={`flex flex-col items-center justify-center py-3 px-1 rounded-2xl border transition-all duration-300 ${
+                    className={`flex flex-col items-center justify-center py-3 px-1 rounded-2xl border-2 transition-all duration-300 relative ${
                       isSelected 
-                        ? `${option.bgColor} ${option.borderColor} shadow-md scale-105` 
-                        : 'bg-white border-transparent hover:bg-gray-50 hover:scale-105'
+                        ? `${option.bgColor} ${option.borderColor} shadow-lg -translate-y-1` 
+                        : 'bg-white border-transparent hover:bg-gray-50'
                     }`}
                   >
                     <div className={`mb-2 transition-all duration-300 ${isSelected ? option.color : 'text-gray-300'} ${isSelected ? 'scale-110 drop-shadow-sm' : ''}`}>
                       <option.icon 
                         size={28}
-                        // Removed fillOpacity from here to let the SVG handle internal opacity if needed, 
-                        // and ensure solid color when selected.
+                        className={isSelected && option.value === '100%' ? 'animate-bounce' : ''}
                       />
                     </div>
                     <span className={`text-[10px] font-bold text-center transition-colors ${isSelected ? 'text-gray-900' : 'text-gray-400'}`}>
                       {option.label}
                     </span>
+                    {isSelected && (
+                        <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${option.color.replace('text-', 'bg-')} border-2 border-white animate-in zoom-in duration-200`}></div>
+                    )}
                   </button>
                 );
               })}
             </div>
+            
+            {/* Disclaimer for 100% */}
+            {sugarLevel === '100%' && (
+                <p className="text-[10px] text-red-400 text-center mt-3 animate-in fade-in slide-in-from-top-1 italic">
+                    *KAINOR takes no responsibility for sugar rush induced hyperactivity.
+                </p>
+            )}
           </div>
         </div>
       </div>
