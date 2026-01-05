@@ -306,36 +306,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ menuData, refreshData, 
     const handleUpdateOrderStatus = async (orderId: string, status: OrderStatus) => {
         setLoading(true);
         try {
-            // Important: We must query by uuid (the real PK), but on the UI we might be displaying readable_id.
-            // If fetching maps readable_id to 'id' in the UI object, we need to preserve the real UUID for updates.
-            // However, Supabase doesn't support 'readable_id' as a primary key selector easily without custom logic.
-            // To fix this without complex re-mapping, let's just assume the 'id' in our frontend state IS the 'readable_id' for display,
-            // but for update operations we might need the UUID.
-            // Simplified approach: The UI displays 'readable_id', but we can try to update using it if it's unique, or we need to store both.
-            // Let's modify fetchData to store realID and displayID.
-            
-            // Wait, standard Supabase update needs the PK (UUID). 
-            // If I mapped `id: o.readable_id`, I lost the UUID.
-            // The cleanest way is to use `id` for logic and `displayId` for UI.
-            // But AdminDashboard expects `order.id` to be the display one.
-            // Let's try to update by `readable_id` if that's what we have, OR change the AdminDashboard to use `order.displayId`.
-            
-            // Given the complexity of refactoring the whole AdminDashboard prop types in one go:
-            // I will modify `fetchData` to try and use the `readable_id` as the primary identifier if possible,
-            // BUT for the `update` call here, we need to be careful.
-            // Actually, if I pass the `readable_id` to `.eq('id', orderId)`, it will fail because `id` is UUID type.
-            // FIX: I will update `fetchData` to store `id` as the UUID, and `displayId` as the readable one.
-            // AND I will update `AdminDashboard` to render `order.displayId || order.id`.
-            
-            // To keep changes minimal to the XML provided:
-            // I'll stick to the plan of mapping `id` to `readable_id` for display, BUT
-            // I'll try to update the row using the `readable_id` column: .eq('readable_id', orderId).
-            
             await supabase.from('orders').update({ status }).eq('readable_id', orderId);
             await refreshData();
         } catch (error) {
             console.error("Error updating order:", error);
-            // Fallback: try updating by UUID if the above failed (unlikely if we are consistent)
             try {
                  await supabase.from('orders').update({ status }).eq('id', orderId);
                  await refreshData();
@@ -659,9 +633,9 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigateToMenu, announcements }) 
   }, []);
 
   return (
-  <div className="pb-24 md:pb-8 w-full">
+  <div className="h-full w-full overflow-y-auto pb-24 md:pb-8 scroll-smooth">
     {/* Header */}
-    <div className="bg-sky-100 relative h-64 md:h-96 w-full overflow-hidden md:rounded-b-3xl shadow-sm">
+    <div className="bg-sky-100 relative h-64 md:h-96 w-full overflow-hidden md:rounded-b-3xl shadow-sm shrink-0">
        <img 
           src="https://z-p3-scontent.fpnh18-4.fna.fbcdn.net/v/t39.30808-6/547539350_122129795780913314_3610621525655581649_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=cc71e4&_nc_eui2=AeGFxo9L2bhZiGt9Zkc3YgnziUjq8geLEC6JSOryB4sQLsLwjJDjvK7QKZ2N9kpykpyAGhuywUS3H8pbgYGKtekM&_nc_ohc=wbsYXK4xn5MQ7kNvwGrNJ4c&_nc_oc=AdnwYa0vambkkoA1v6YDExPS9WqVCrhqQJEQwVhUr-XjGof3IMsCWrpF7n4_1bgLKxE&_nc_zt=23&_nc_ht=z-p3-scontent.fpnh18-4.fna&_nc_gid=8bP7DyoaLsf2xcpOZLXBXA&oh=00_AfphpFRnVu5ai4ULyYlEFw0NWthuxcrqWwJNpO2CatJVpw&oe=69617185" 
           className="w-full h-full object-cover"
@@ -800,7 +774,6 @@ const MenuView: React.FC<MenuViewProps> = ({ activeCategory, setActiveCategory, 
       {/* Top Bar with Search */}
       <div className="px-4 pt-4 pb-2 bg-white flex flex-col shadow-sm z-20 relative md:px-8">
           <div className="flex items-center gap-2 mb-2 max-w-7xl mx-auto w-full">
-              
                
                {/* Search Bar */}
                <div className="flex-1 bg-gray-100 rounded-full px-4 py-2 flex items-center max-w-xl mx-auto">
