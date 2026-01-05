@@ -1,4 +1,5 @@
-import { Category, OrderHistoryItem } from './types';
+
+import { Category, OrderHistoryItem, Announcement } from './types';
 
 export const MENU_DATA: Category[] = [
   {
@@ -67,6 +68,25 @@ export const MENU_DATA: Category[] = [
       { id: '24', name: 'Mini Raisin Roll', price: 2.00, image: 'https://picsum.photos/200/200?random=24' },
     ]
   },
+];
+
+export const INITIAL_ANNOUNCEMENTS: Announcement[] = [
+  {
+    id: 'ann-1',
+    title: 'Coconut Cream Latte',
+    subtitle: 'Soft Opening Special',
+    image: 'https://picsum.photos/600/400?random=103',
+    priceTag: '10,000៛',
+    colorClass: 'bg-amber-900'
+  },
+  {
+    id: 'ann-2',
+    title: 'Matcha Series',
+    subtitle: 'New Arrival',
+    image: 'https://picsum.photos/600/400?random=104',
+    priceTag: 'Try Now',
+    colorClass: 'bg-emerald-900'
+  }
 ];
 
 export const MOCK_HISTORY: OrderHistoryItem[] = [

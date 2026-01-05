@@ -1,8 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Bot } from 'lucide-react';
 import { getCoffeeRecommendation } from '../services/geminiService';
+import { Category } from '../types';
 
-export const GeminiAssistant: React.FC = () => {
+interface GeminiAssistantProps {
+  menuData: Category[];
+}
+
+export const GeminiAssistant: React.FC<GeminiAssistantProps> = ({ menuData }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant', text: string }[]>([
     { role: 'assistant', text: "Hi! I'm your AI Barista. Unsure what to order? Tell me what you like!" }
@@ -27,7 +32,8 @@ export const GeminiAssistant: React.FC = () => {
     setInput("");
     setLoading(true);
 
-    const response = await getCoffeeRecommendation(userMsg);
+    // Pass the live menuData to the service
+    const response = await getCoffeeRecommendation(userMsg, menuData);
     
     setMessages(prev => [...prev, { role: 'assistant', text: response }]);
     setLoading(false);
@@ -37,7 +43,7 @@ export const GeminiAssistant: React.FC = () => {
     return (
       <button 
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-20 right-4 z-50 bg-brand-yellow text-brand-dark p-3 rounded-full shadow-lg hover:bg-yellow-300 transition-all transform hover:scale-105"
+        className="fixed bottom-20 right-4 z-40 bg-brand-yellow text-brand-dark p-3 rounded-full shadow-lg hover:bg-yellow-300 transition-all transform hover:scale-105"
       >
         <Bot size={28} />
       </button>

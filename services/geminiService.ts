@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
-import { MENU_DATA } from "../constants";
+import { Category } from "../types";
 
-export const getCoffeeRecommendation = async (userQuery: string): Promise<string> => {
+export const getCoffeeRecommendation = async (userQuery: string, menuData: Category[]): Promise<string> => {
   if (!process.env.API_KEY) {
     return "Please provide an API Key to use the Coffee Concierge.";
   }
@@ -10,14 +10,14 @@ export const getCoffeeRecommendation = async (userQuery: string): Promise<string
   const model = "gemini-3-flash-preview";
 
   // Flatten menu for context
-  const menuContext = MENU_DATA.map(cat => 
+  const menuContext = menuData.map(cat => 
     `${cat.name}: ${cat.items.map(item => `${item.name} ($${item.price})`).join(', ')}`
   ).join('\n');
 
   const systemInstruction = `You are a helpful barista assistant at KAINOR Coffee & Food. 
   Your goal is to recommend drinks or pastries from our menu based on the user's preference.
   
-  Here is our Menu:
+  Here is our Live Menu:
   ${menuContext}
   
   Keep your answers short, friendly, and enthusiastic. Always mention the price of the recommended item.
