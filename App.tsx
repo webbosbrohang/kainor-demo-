@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Home, Coffee, User, MapPin, Search, ShoppingBag, Minus, Plus, X, Check, Lock, LayoutDashboard, Package, ListChecks, LogOut, Edit2, Trash2, Save, Image as ImageIcon, Loader2, Grid, Megaphone, RotateCw } from 'lucide-react';
+import { Home, Coffee, User, MapPin, Search, ShoppingBag, Minus, Plus, X, Check, Lock, LayoutDashboard, Package, ListChecks, LogOut, Edit2, Trash2, Save, Image as ImageIcon, Loader2, Grid, Megaphone, RotateCw, UploadCloud } from 'lucide-react';
 import { MENU_DATA, MOCK_HISTORY, INITIAL_ANNOUNCEMENTS } from './constants';
 import { Product, Category, OrderHistoryItem, OrderStatus, Announcement } from './types';
 import { MenuItem } from './components/MenuItem';
@@ -104,6 +104,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ menuData, refreshData, 
     const [prodFormPrice, setProdFormPrice] = useState("");
     const [prodFormCategory, setProdFormCategory] = useState("");
     const [prodFormImage, setProdFormImage] = useState("");
+    const [prodImageFile, setProdImageFile] = useState<File | null>(null);
+    const [prodImagePreview, setProdImagePreview] = useState("");
 
     // --- State for Categories ---
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -129,6 +131,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ menuData, refreshData, 
 
     // --- Product Handlers ---
     const openProductModal = (product?: Product, categoryId?: string) => {
+        setProdImageFile(null);
+        setProdImagePreview("");
+        
         if (product) {
             setEditingProduct(product);
             setProdFormName(product.name);
@@ -145,14 +150,71 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ menuData, refreshData, 
         setIsProductModalOpen(true);
     };
 
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setProdImageFile(file);
+            setProdImagePreview(URL.createObjectURL(file));
+        }
+    };
+
     const handleSaveProduct = async () => {
         if (!prodFormName || !prodFormPrice || !prodFormCategory) return;
         setLoading(true);
 
+        let imageUrl = prodFormImage;
+
+        if (prodImageFile) {
+            try {
+                const fileExt = prodImageFile.name.split('.').pop();
+                const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+                const filePath = `${fileName}`;
+                
+                // Try upload
+                let { error: uploadError } = await supabase.storage
+                    .from('products')
+                    .upload(filePath, prodImageFile);
+
+                // If bucket not found, try to create it (best effort)
+                if (uploadError && (uploadError.message.includes("Bucket not found") || (uploadError as any).error === 'Bucket not found' || (uploadError as any).statusCode === '404')) {
+                     console.log("Bucket 'products' not found. Attempting to create...");
+                     const { error: createBucketError } = await supabase.storage.createBucket('products', {
+                        public: true
+                     });
+                     
+                     if (!createBucketError) {
+                         // Retry upload if bucket creation succeeded
+                         const retry = await supabase.storage.from('products').upload(filePath, prodImageFile);
+                         uploadError = retry.error;
+                     } else {
+                         console.error("Failed to create bucket automatically:", createBucketError);
+                     }
+                }
+
+                if (uploadError) {
+                    console.error("Upload Error:", uploadError);
+                    alert(`Failed to upload image: ${uploadError.message}\n\nIf the error is "Bucket not found", please manually create a public storage bucket named 'products' in your Supabase dashboard, as the API key may not have permissions to create it.`);
+                    setLoading(false);
+                    return;
+                }
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('products')
+                    .getPublicUrl(filePath);
+                
+                imageUrl = publicUrl;
+            } catch (error) {
+                console.error("Error uploading image:", error);
+                alert("An unexpected error occurred during image upload.");
+                setLoading(false);
+                return;
+            }
+        }
+
         const productData = {
             name: prodFormName,
             price: parseFloat(prodFormPrice),
-            image: prodFormImage,
+            image: imageUrl,
             category_id: prodFormCategory,
         };
 
@@ -371,9 +433,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ menuData, refreshData, 
                 {activeTab === 'orders' && (
                     <div className="animate-in fade-in space-y-6">
                         {/* Chart Section */}
-                         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                             <HistoryChart orders={orders} />
-                         </div>
+                         <HistoryChart orders={orders} />
 
                         {/* Orders Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -522,23 +582,87 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ menuData, refreshData, 
             {/* Product Modal */}
             {isProductModalOpen && (
                 <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl">
+                    <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xl font-bold">{editingProduct ? 'Edit Product' : 'New Product'}</h3>
                             <button onClick={() => setIsProductModalOpen(false)}><X size={24} /></button>
                         </div>
                         <div className="space-y-4">
-                            <input type="text" className="w-full p-3 bg-gray-50 rounded-xl border" placeholder="Product Name" value={prodFormName} onChange={e => setProdFormName(e.target.value)} />
-                            <input type="number" className="w-full p-3 bg-gray-50 rounded-xl border" placeholder="Price" value={prodFormPrice} onChange={e => setProdFormPrice(e.target.value)} />
-                            <select className="w-full p-3 bg-gray-50 rounded-xl border" value={prodFormCategory} onChange={e => setProdFormCategory(e.target.value)}>
-                                {menuData.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
-                            <div className="flex gap-2">
-                                <input type="text" className="flex-1 p-3 bg-gray-50 rounded-xl border text-sm" placeholder="Image URL" value={prodFormImage} onChange={e => setProdFormImage(e.target.value)} />
-                                <button onClick={() => setProdFormImage(`https://picsum.photos/200/200?random=${Math.floor(Math.random() * 1000)}`)} className="p-3 bg-gray-100 rounded-xl"><ImageIcon size={20} /></button>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+                                <input type="text" className="w-full p-3 bg-gray-50 rounded-xl border" placeholder="e.g. Iced Latte" value={prodFormName} onChange={e => setProdFormName(e.target.value)} />
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
+                                    <input type="number" className="w-full p-3 bg-gray-50 rounded-xl border" placeholder="0.00" value={prodFormPrice} onChange={e => setProdFormPrice(e.target.value)} />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                                    <select className="w-full p-3 bg-gray-50 rounded-xl border" value={prodFormCategory} onChange={e => setProdFormCategory(e.target.value)}>
+                                        {menuData.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
+                                <div className="p-4 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50 flex flex-col items-center gap-3">
+                                    {prodImagePreview || prodFormImage ? (
+                                        <div className="w-24 h-24 rounded-lg overflow-hidden relative shadow-md bg-white">
+                                            <img src={prodImagePreview || prodFormImage} alt="Preview" className="w-full h-full object-cover" />
+                                            {prodImageFile && (
+                                                <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                                                    <span className="text-white text-xs font-bold bg-black/50 px-2 py-1 rounded">New File</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-gray-400">
+                                            <ImageIcon size={32} />
+                                        </div>
+                                    )}
+                                    
+                                    <div className="flex flex-col items-center w-full">
+                                        <label htmlFor="file-upload" className="cursor-pointer bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold py-2 px-4 rounded-lg text-sm inline-flex items-center gap-2 mb-2 shadow-sm">
+                                            <UploadCloud size={16} />
+                                            <span>{prodImageFile ? 'Change File' : 'Upload Image'}</span>
+                                        </label>
+                                        <input 
+                                            id="file-upload" 
+                                            type="file" 
+                                            accept="image/*"
+                                            className="hidden" 
+                                            onChange={handleFileChange}
+                                        />
+                                        <p className="text-xs text-gray-400">or paste URL below</p>
+                                    </div>
+                                    
+                                    <div className="w-full flex gap-2">
+                                        <input 
+                                            type="text" 
+                                            className="flex-1 p-2 bg-white rounded-lg border text-sm" 
+                                            placeholder="https://..." 
+                                            value={prodFormImage} 
+                                            onChange={e => {
+                                                setProdFormImage(e.target.value);
+                                                if(!prodImageFile) setProdImagePreview("");
+                                            }} 
+                                        />
+                                        <button onClick={() => {
+                                            const randomUrl = `https://picsum.photos/200/200?random=${Math.floor(Math.random() * 1000)}`;
+                                            setProdFormImage(randomUrl);
+                                            setProdImageFile(null);
+                                            setProdImagePreview("");
+                                        }} className="p-2 bg-gray-200 rounded-lg hover:bg-gray-300" title="Random Image">
+                                            <RotateCw size={18} className="text-gray-600" />
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <button onClick={handleSaveProduct} className="w-full mt-6 bg-brand-yellow text-white font-bold py-3 rounded-xl">Save</button>
+                        <button onClick={handleSaveProduct} className="w-full mt-6 bg-brand-yellow text-white font-bold py-3 rounded-xl shadow-lg hover:bg-yellow-400 transition-colors">Save Product</button>
                     </div>
                 </div>
             )}
