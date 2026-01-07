@@ -28,7 +28,7 @@ const AdminLogin = ({ onLogin, onCancel }: { onLogin: () => void, onCancel: () =
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (username === 'admin' && password === 'CoffeeMaster2024') {
+        if (username === 'admin' && password === 'kainor168') {
             onLogin();
         } else {
             setError("Invalid credentials");
@@ -37,7 +37,7 @@ const AdminLogin = ({ onLogin, onCancel }: { onLogin: () => void, onCancel: () =
 
     return (
         <div className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6 animate-in fade-in duration-300">
-            <div className="w-full max-w-sm">
+            <div className="w-full max-w-sm view-transition">
                 <div className="text-center mb-8">
                     <div className="w-16 h-16 bg-brand-yellow/20 rounded-full flex items-center justify-center mx-auto mb-4 text-brand-yellow">
                         <Lock size={32} />
@@ -67,7 +67,7 @@ const AdminLogin = ({ onLogin, onCancel }: { onLogin: () => void, onCancel: () =
                     </div>
                     {error && <p className="text-red-500 text-sm text-center">{error}</p>}
                     
-                    <button type="submit" className="w-full bg-brand-yellow text-white font-bold py-3 rounded-xl shadow-lg shadow-yellow-200 hover:bg-yellow-400 transition-colors mt-4">
+                    <button type="submit" className="w-full bg-brand-yellow text-white font-bold py-3 rounded-xl shadow-lg shadow-yellow-200 hover:bg-yellow-400 transition-colors mt-4 active:scale-95 duration-200">
                         Login
                     </button>
                     <button type="button" onClick={onCancel} className="w-full text-gray-400 text-sm font-medium py-2 hover:text-gray-600 transition-colors">
@@ -397,7 +397,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ menuData, refreshData, 
                     <button 
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id as any)}
-                        className={`flex-1 min-w-[100px] py-3 px-2 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-sm whitespace-nowrap ${activeTab === tab.id ? 'bg-brand-yellow text-white shadow-lg shadow-yellow-200' : 'bg-white text-gray-500 shadow-sm'}`}
+                        className={`flex-1 min-w-[100px] py-3 px-2 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-sm whitespace-nowrap active:scale-95 duration-200 ${activeTab === tab.id ? 'bg-brand-yellow text-white shadow-lg shadow-yellow-200' : 'bg-white text-gray-500 shadow-sm'}`}
                     >
                         <tab.icon size={18} />
                         {tab.label}
@@ -407,91 +407,168 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ menuData, refreshData, 
 
             {/* Main Content */}
              <div className="px-4 max-w-7xl mx-auto w-full pb-10">
-                {activeTab === 'orders' && (
-                    <div className="animate-in fade-in space-y-6">
-                         <HistoryChart orders={orders} />
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {orders.length === 0 && <div className="col-span-full text-center p-10 text-gray-400">No orders found.</div>}
-                            {orders.map(order => (
-                                <div key={order.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col">
-                                    <div className="flex justify-between items-start mb-3">
-                                        <div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-bold text-gray-900 line-clamp-1 text-xs">{order.id}</span>
-                                                <span className="text-xs text-gray-400">{new Date(order.date).toLocaleDateString()}</span>
-                                            </div>
-                                            <p className="text-sm font-medium text-gray-600 mt-1">{order.customerName || 'Walk-in'} {order.tableNumber && <span className="text-brand-yellow bg-yellow-50 px-2 py-0.5 rounded-full ml-2 border border-yellow-100">T-{order.tableNumber}</span>}</p>
-                                        </div>
-                                        <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${statusColors[order.status]}`}>{order.status}</span>
-                                    </div>
-                                    <div className="border-t border-b border-gray-50 py-3 my-3 space-y-1 flex-1">
-                                        {order.items.map((item, idx) => <p key={idx} className="text-sm text-gray-700 flex items-center gap-2"><span className="w-1.5 h-1.5 bg-gray-300 rounded-full"></span>{item}</p>)}
-                                    </div>
-                                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-50">
-                                        <span className="font-bold text-lg text-brand-yellow">${order.total.toFixed(2)}</span>
-                                        <div className="flex gap-2">
-                                            {order.status === 'pending' && <button onClick={() => handleUpdateOrderStatus(order.id, 'preparing')} className="btn-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-2 py-1 rounded text-xs font-bold">Prepare</button>}
-                                            {order.status === 'preparing' && <button onClick={() => handleUpdateOrderStatus(order.id, 'completed')} className="btn-xs bg-green-100 text-green-700 hover:bg-green-200 px-2 py-1 rounded text-xs font-bold">Done</button>}
-                                            {order.status === 'pending' && <button onClick={() => handleUpdateOrderStatus(order.id, 'cancelled')} className="btn-xs bg-red-50 text-red-500 hover:bg-red-100 px-2 py-1 rounded text-xs font-bold">Cancel</button>}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-                {activeTab === 'products' && (
-                    <div className="animate-in fade-in">
-                        <button onClick={() => openProductModal()} className="w-full md:w-auto px-6 py-3 mb-4 bg-gray-800 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-gray-700"><Plus size={20} /> Add Product</button>
+                <div key={activeTab} className="view-transition">
+                    {activeTab === 'orders' && (
                         <div className="space-y-6">
-                            {menuData.map(cat => (
-                                <div key={cat.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                                    <div className="bg-gray-50 px-4 py-3 border-b border-gray-100 flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-brand-yellow"></div><h3 className="font-bold text-gray-800 uppercase text-xs tracking-wider">{cat.name}</h3></div>
-                                    <div className="divide-y divide-gray-50">
-                                        {cat.items.map(item => (
-                                            <div key={item.id} className="p-3 flex items-center justify-between hover:bg-gray-50">
-                                                <div className="flex items-center gap-3"><img src={item.image} alt={item.name} className="w-10 h-10 rounded-lg object-cover bg-gray-100" /><div><p className="font-semibold text-sm text-gray-900">{item.name}</p><p className="text-xs text-brand-yellow font-bold">${item.price.toFixed(2)}</p></div></div>
-                                                <div className="flex gap-1"><button onClick={() => openProductModal(item, cat.id)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg"><Edit2 size={16} /></button><button onClick={() => handleDeleteProduct(item.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg"><Trash2 size={16} /></button></div>
+                            <HistoryChart orders={orders} />
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {orders.length === 0 && <div className="col-span-full text-center p-10 text-gray-400">No orders found.</div>}
+                                {orders.map(order => (
+                                    <div key={order.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-gray-900 line-clamp-1 text-xs">{order.id}</span>
+                                                    <span className="text-xs text-gray-400">{new Date(order.date).toLocaleDateString()}</span>
+                                                </div>
+                                                <p className="text-sm font-medium text-gray-600 mt-1">{order.customerName || 'Walk-in'} {order.tableNumber && <span className="text-brand-yellow bg-yellow-50 px-2 py-0.5 rounded-full ml-2 border border-yellow-100">T-{order.tableNumber}</span>}</p>
                                             </div>
-                                        ))}
+                                            <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${statusColors[order.status]}`}>{order.status}</span>
+                                        </div>
+                                        <div className="border-t border-b border-gray-50 py-3 my-3 space-y-1 flex-1">
+                                            {order.items.map((item, idx) => <p key={idx} className="text-sm text-gray-700 flex items-center gap-2"><span className="w-1.5 h-1.5 bg-gray-300 rounded-full"></span>{item}</p>)}
+                                        </div>
+                                        <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-50">
+                                            <span className="font-bold text-lg text-brand-yellow">${order.total.toFixed(2)}</span>
+                                            <div className="flex gap-2">
+                                                {order.status === 'pending' && <button onClick={() => handleUpdateOrderStatus(order.id, 'preparing')} className="btn-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-2 py-1 rounded text-xs font-bold active:scale-95 transition-transform">Prepare</button>}
+                                                {order.status === 'preparing' && <button onClick={() => handleUpdateOrderStatus(order.id, 'completed')} className="btn-xs bg-green-100 text-green-700 hover:bg-green-200 px-2 py-1 rounded text-xs font-bold active:scale-95 transition-transform">Done</button>}
+                                                {order.status === 'pending' && <button onClick={() => handleUpdateOrderStatus(order.id, 'cancelled')} className="btn-xs bg-red-50 text-red-500 hover:bg-red-100 px-2 py-1 rounded text-xs font-bold active:scale-95 transition-transform">Cancel</button>}
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
-                {activeTab === 'categories' && (
-                    <div className="animate-in fade-in">
-                        <button onClick={() => openCategoryModal()} className="w-full md:w-auto px-6 py-3 mb-4 bg-gray-800 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-gray-700"><Plus size={20} /> Add Category</button>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {menuData.map(cat => (
-                                <div key={cat.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
-                                    <div className="flex items-center gap-3"><div className="p-2 bg-brand-yellow/10 rounded-lg text-brand-yellow"><Coffee size={24} /></div><div><h3 className="font-bold text-gray-800">{cat.name}</h3><p className="text-xs text-gray-400">{cat.items.length} items</p></div></div>
-                                    <div className="flex gap-1"><button onClick={() => openCategoryModal(cat)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg"><Edit2 size={18} /></button><button onClick={() => handleDeleteCategory(cat.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg"><Trash2 size={18} /></button></div>
-                                </div>
-                            ))}
+                    )}
+                    {activeTab === 'products' && (
+                        <div>
+                            <button onClick={() => openProductModal()} className="w-full md:w-auto px-6 py-3 mb-4 bg-gray-800 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-gray-700 active:scale-95 transition-all"><Plus size={20} /> Add Product</button>
+                            <div className="space-y-6">
+                                {menuData.map(cat => (
+                                    <div key={cat.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                                        <div className="bg-gray-50 px-4 py-3 border-b border-gray-100 flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-brand-yellow"></div><h3 className="font-bold text-gray-800 uppercase text-xs tracking-wider">{cat.name}</h3></div>
+                                        <div className="divide-y divide-gray-50">
+                                            {cat.items.map(item => (
+                                                <div key={item.id} className="p-3 flex items-center justify-between hover:bg-gray-50">
+                                                    <div className="flex items-center gap-3"><img src={item.image} alt={item.name} className="w-10 h-10 rounded-lg object-cover bg-gray-100" /><div><p className="font-semibold text-sm text-gray-900">{item.name}</p><p className="text-xs text-brand-yellow font-bold">${item.price.toFixed(2)}</p></div></div>
+                                                    <div className="flex gap-1"><button onClick={() => openProductModal(item, cat.id)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg"><Edit2 size={16} /></button><button onClick={() => handleDeleteProduct(item.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg"><Trash2 size={16} /></button></div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
-                {activeTab === 'announcements' && (
-                    <div className="animate-in fade-in">
-                        <button onClick={() => openAnnouncementModal()} className="w-full md:w-auto px-6 py-3 mb-4 bg-gray-800 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-gray-700"><Plus size={20} /> New Post</button>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {announcements.map(ann => (
-                                <div key={ann.id} className={`${ann.colorClass} rounded-2xl overflow-hidden shadow-lg relative h-64 group`}>
-                                    <img src={ann.image} className="absolute inset-0 w-full h-full object-cover opacity-60" alt="Promo" />
-                                    <div className="relative z-10 p-6 flex flex-col justify-between h-full"><div className="text-white"><h2 className="text-2xl font-bold mb-1">{ann.title}</h2><p className="text-lg font-light opacity-90">{ann.subtitle}</p></div><div className="flex justify-between items-end"><button onClick={() => openAnnouncementModal(ann)} className="p-2 text-white hover:bg-white/20 rounded"><Edit2 size={16} /></button><button onClick={() => handleDeleteAnnouncement(ann.id)} className="p-2 text-white hover:bg-red-500/50 rounded"><Trash2 size={16} /></button></div></div>
-                                </div>
-                            ))}
+                    )}
+                    {activeTab === 'categories' && (
+                        <div>
+                            <button onClick={() => openCategoryModal()} className="w-full md:w-auto px-6 py-3 mb-4 bg-gray-800 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-gray-700 active:scale-95 transition-all"><Plus size={20} /> Add Category</button>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {menuData.map(cat => (
+                                    <div key={cat.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+                                        <div className="flex items-center gap-3"><div className="p-2 bg-brand-yellow/10 rounded-lg text-brand-yellow"><Coffee size={24} /></div><div><h3 className="font-bold text-gray-800">{cat.name}</h3><p className="text-xs text-gray-400">{cat.items.length} items</p></div></div>
+                                        <div className="flex gap-1"><button onClick={() => openCategoryModal(cat)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg"><Edit2 size={18} /></button><button onClick={() => handleDeleteCategory(cat.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg"><Trash2 size={18} /></button></div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                    {activeTab === 'announcements' && (
+                        <div>
+                            <button onClick={() => openAnnouncementModal()} className="w-full md:w-auto px-6 py-3 mb-4 bg-gray-800 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-gray-700 active:scale-95 transition-all"><Plus size={20} /> New Post</button>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {announcements.map(ann => (
+                                    <div key={ann.id} className={`${ann.colorClass} rounded-2xl overflow-hidden shadow-lg relative h-64 group`}>
+                                        <img src={ann.image} className="absolute inset-0 w-full h-full object-cover opacity-60" alt="Promo" />
+                                        <div className="relative z-10 p-6 flex flex-col justify-between h-full"><div className="text-white"><h2 className="text-2xl font-bold mb-1">{ann.title}</h2><p className="text-lg font-light opacity-90">{ann.subtitle}</p></div><div className="flex justify-between items-end"><button onClick={() => openAnnouncementModal(ann)} className="p-2 text-white hover:bg-white/20 rounded"><Edit2 size={16} /></button><button onClick={() => handleDeleteAnnouncement(ann.id)} className="p-2 text-white hover:bg-red-500/50 rounded"><Trash2 size={16} /></button></div></div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
              </div>
 
              {/* Modals for Product, Category, Announcement */}
-             {isProductModalOpen && <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"><div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl overflow-y-auto max-h-[90vh]"><h3 className="text-xl font-bold mb-4">{editingProduct ? 'Edit' : 'New'} Product</h3><input className="w-full p-2 border rounded mb-2" value={prodFormName} onChange={e => setProdFormName(e.target.value)} placeholder="Name"/><input className="w-full p-2 border rounded mb-2" type="number" value={prodFormPrice} onChange={e => setProdFormPrice(e.target.value)} placeholder="Price"/><div className="flex gap-2"><input className="w-full p-2 border rounded" value={prodFormImage} onChange={e => setProdFormImage(e.target.value)} placeholder="Image URL"/><input type="file" onChange={handleFileChange} /></div><button onClick={handleSaveProduct} className="w-full bg-brand-yellow p-3 rounded-xl mt-4 text-white font-bold">Save</button><button onClick={() => setIsProductModalOpen(false)} className="w-full mt-2 text-gray-500">Cancel</button></div></div>}
-             {isCategoryModalOpen && <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"><div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl"><h3 className="text-xl font-bold mb-4">{editingCategory ? 'Edit' : 'New'} Category</h3><input className="w-full p-2 border rounded mb-2" value={catFormName} onChange={e => setCatFormName(e.target.value)} placeholder="Name"/><button onClick={handleSaveCategory} className="w-full bg-brand-yellow p-3 rounded-xl mt-4 text-white font-bold">Save</button><button onClick={() => setIsCategoryModalOpen(false)} className="w-full mt-2 text-gray-500">Cancel</button></div></div>}
-             {isAnnouncementModalOpen && <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"><div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl"><h3 className="text-xl font-bold mb-4">{editingAnnouncement ? 'Edit' : 'New'} Post</h3><input className="w-full p-2 border rounded mb-2" value={annFormTitle} onChange={e => setAnnFormTitle(e.target.value)} placeholder="Title"/><button onClick={handleSaveAnnouncement} className="w-full bg-brand-yellow p-3 rounded-xl mt-4 text-white font-bold">Save</button><button onClick={() => setIsAnnouncementModalOpen(false)} className="w-full mt-2 text-gray-500">Cancel</button></div></div>}
+             {isProductModalOpen && (
+                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl overflow-y-auto max-h-[90vh] view-transition">
+                        <h3 className="text-xl font-bold mb-4">{editingProduct ? 'Edit' : 'New'} Product</h3>
+                        
+                        <div className="space-y-3">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+                                <input 
+                                    className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-yellow outline-none" 
+                                    value={prodFormName} 
+                                    onChange={e => setProdFormName(e.target.value)} 
+                                    placeholder="e.g. Iced Latte"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
+                                <input 
+                                    className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-yellow outline-none" 
+                                    type="number" 
+                                    step="0.01"
+                                    value={prodFormPrice} 
+                                    onChange={e => setProdFormPrice(e.target.value)} 
+                                    placeholder="0.00"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                                <select 
+                                    className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-yellow outline-none bg-white" 
+                                    value={prodFormCategory} 
+                                    onChange={e => setProdFormCategory(e.target.value)}
+                                >
+                                    {menuData.map(cat => (
+                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+                                <div className="flex flex-col gap-2">
+                                    <input 
+                                        className="w-full p-2 border border-gray-200 rounded-lg text-sm" 
+                                        value={prodFormImage} 
+                                        onChange={e => setProdFormImage(e.target.value)} 
+                                        placeholder="Image URL"
+                                    />
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-px bg-gray-200 flex-1"></div>
+                                        <span className="text-xs text-gray-400">OR UPLOAD</span>
+                                        <div className="h-px bg-gray-200 flex-1"></div>
+                                    </div>
+                                    <input 
+                                        type="file" 
+                                        onChange={handleFileChange}
+                                        className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-yellow/10 file:text-brand-yellow hover:file:bg-brand-yellow/20"
+                                    />
+                                    {prodImagePreview && (
+                                        <div className="mt-2 w-20 h-20 rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                                            <img src={prodImagePreview} alt="Preview" className="w-full h-full object-cover" />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 flex gap-3">
+                            <button onClick={() => setIsProductModalOpen(false)} className="flex-1 py-3 rounded-xl font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors">Cancel</button>
+                            <button onClick={handleSaveProduct} className="flex-1 py-3 rounded-xl font-bold text-white bg-brand-yellow hover:bg-yellow-400 shadow-lg shadow-yellow-200 transition-colors">Save</button>
+                        </div>
+                    </div>
+                </div>
+             )}
+             {isCategoryModalOpen && <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"><div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl view-transition"><h3 className="text-xl font-bold mb-4">{editingCategory ? 'Edit' : 'New'} Category</h3><input className="w-full p-2 border rounded mb-2" value={catFormName} onChange={e => setCatFormName(e.target.value)} placeholder="Name"/><button onClick={handleSaveCategory} className="w-full bg-brand-yellow p-3 rounded-xl mt-4 text-white font-bold">Save</button><button onClick={() => setIsCategoryModalOpen(false)} className="w-full mt-2 text-gray-500">Cancel</button></div></div>}
+             {isAnnouncementModalOpen && <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"><div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl view-transition"><h3 className="text-xl font-bold mb-4">{editingAnnouncement ? 'Edit' : 'New'} Post</h3><input className="w-full p-2 border rounded mb-2" value={annFormTitle} onChange={e => setAnnFormTitle(e.target.value)} placeholder="Title"/><button onClick={handleSaveAnnouncement} className="w-full bg-brand-yellow p-3 rounded-xl mt-4 text-white font-bold">Save</button><button onClick={() => setIsAnnouncementModalOpen(false)} className="w-full mt-2 text-gray-500">Cancel</button></div></div>}
         </div>
     );
 };
@@ -758,16 +835,16 @@ const AccountView = ({ onAdminLogin }: { onAdminLogin: () => void }) => (
         <p className="text-gray-500 mb-8">+855 12 345 678</p>
 
         <div className="w-full space-y-3">
-            <button onClick={onAdminLogin} className="w-full text-left p-4 bg-gray-900 text-white rounded-xl hover:bg-gray-800 font-medium flex justify-between items-center shadow-lg shadow-gray-200">
+            <button onClick={onAdminLogin} className="w-full text-left p-4 bg-gray-900 text-white rounded-xl hover:bg-gray-800 font-medium flex justify-between items-center shadow-lg shadow-gray-200 active:scale-95 transition-all">
                 <div className="flex items-center gap-3"><Lock size={20} /> <span>Admin Dashboard</span></div>
                 <ChevronRight size={18} />
             </button>
             <div className="h-px bg-gray-100 my-4"></div>
-            <button className="w-full text-left p-4 bg-gray-50 rounded-xl hover:bg-gray-100 font-medium flex justify-between items-center text-gray-700">
+            <button className="w-full text-left p-4 bg-gray-50 rounded-xl hover:bg-gray-100 font-medium flex justify-between items-center text-gray-700 active:scale-95 transition-all">
                 <div className="flex items-center gap-3"><User size={20} /> <span>Profile Details</span></div>
                 <ChevronRight size={18} className="text-gray-400" />
             </button>
-            <button className="w-full text-left p-4 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 font-medium flex justify-between items-center mt-8">
+            <button className="w-full text-left p-4 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 font-medium flex justify-between items-center mt-8 active:scale-95 transition-all">
                 <div className="flex items-center gap-3"><LogOut size={20} /> <span>Log Out</span></div>
             </button>
         </div>
@@ -896,17 +973,17 @@ const App = () => {
         
         const orderId = data[0]?.readable_id || data[0]?.id || 'NEW';
         const itemsList = cartItems.map(item => {
-            let line = `- ${item.quantity}x ${item.name} (Sugar: ${item.customization.sugarLevel})`;
-            if (item.note) line += `\n  <i>📝 Note: ${item.note}</i>`;
+            let line = `☕ <b>${item.quantity}x ${item.name}</b> (🍬 ${item.customization.sugarLevel})`;
+            if (item.note) line += `\n   ✏️ <i>Note: ${item.note}</i>`;
             return line;
         }).join('\n');
 
-        const message = `<b>🔔 New Order Received!</b>\n\n` +
-                        `<b>ID:</b> ${orderId}\n` +
-                        `<b>Customer:</b> Coffee Lover\n` +
-                        `<b>Table:</b> ${selectedTable}\n` +
-                        `<b>Total:</b> $${total.toFixed(2)}\n\n` +
-                        `<b>Items:</b>\n${itemsList}`;
+        const message = `<b>🔔 NEW ORDER RECEIVED!</b>\n\n` +
+                        `🧾 <b>ID:</b> <code>${orderId}</code>\n` +
+                        `👤 <b>Customer:</b> Coffee Lover\n` +
+                        `🍽️ <b>Table:</b> ${selectedTable}\n` +
+                        `💰 <b>Total:</b> $${total.toFixed(2)}\n\n` +
+                        `<b>📋 ITEMS:</b>\n${itemsList}`;
 
         fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
             method: 'POST',
@@ -954,7 +1031,7 @@ const App = () => {
             {[ {id: 'home', icon: Home, label: 'Home'}, {id: 'menu', icon: Coffee, label: 'Menu'}, {id: 'cart', icon: ShoppingBag, label: 'Cart'}, {id: 'account', icon: User, label: 'Account'} ].map(tab => {
                 const isActive = activeTab === tab.id;
                 return (
-                    <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-300 font-medium relative group ${isActive ? 'bg-gray-900 text-white shadow-xl shadow-gray-200' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
+                    <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-300 font-medium relative group active:scale-95 ${isActive ? 'bg-gray-900 text-white shadow-xl shadow-gray-200 translate-x-2' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}>
                         <tab.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
                         <span>{tab.label}</span>
                         {tab.id === 'cart' && cartCount > 0 && <span className="ml-auto bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-md shadow-red-200">{cartCount}</span>}
@@ -975,10 +1052,12 @@ const App = () => {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-full overflow-hidden relative w-full bg-gray-50">
-        {activeTab === 'home' && <HomeView onNavigateToMenu={() => setActiveTab('menu')} announcements={announcements} />}
-        {activeTab === 'menu' && <MenuView activeCategory={activeCategory} setActiveCategory={setActiveCategory} onProductClick={setSelectedProduct} menuData={menuData} />}
-        {activeTab === 'cart' && <CartView items={cartItems} onRemove={handleRemoveItem} onCheckout={() => setShowCheckoutConfirm(true)} onNavigateToMenu={() => setActiveTab('menu')} />}
-        {activeTab === 'account' && <AccountView onAdminLogin={() => setShowAdminLogin(true)} />}
+        <div key={activeTab} className="h-full w-full flex flex-col view-transition">
+            {activeTab === 'home' && <HomeView onNavigateToMenu={() => setActiveTab('menu')} announcements={announcements} />}
+            {activeTab === 'menu' && <MenuView activeCategory={activeCategory} setActiveCategory={setActiveCategory} onProductClick={setSelectedProduct} menuData={menuData} />}
+            {activeTab === 'cart' && <CartView items={cartItems} onRemove={handleRemoveItem} onCheckout={() => setShowCheckoutConfirm(true)} onNavigateToMenu={() => setActiveTab('menu')} />}
+            {activeTab === 'account' && <AccountView onAdminLogin={() => setShowAdminLogin(true)} />}
+        </div>
       </main>
 
       {/* Admin Login Modal */}
@@ -993,9 +1072,9 @@ const App = () => {
                {[ {id: 'home', icon: Home}, {id: 'menu', icon: Coffee}, {id: 'cart', icon: ShoppingBag, count: cartCount}, {id: 'account', icon: User} ].map((tab) => {
                    const isActive = activeTab === tab.id;
                    return (
-                       <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`relative p-4 rounded-full transition-all duration-300 ${isActive ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-400 hover:text-gray-600'}`}>
+                       <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`relative p-4 rounded-full transition-all duration-300 active:scale-90 ${isActive ? 'bg-gray-900 text-white shadow-lg scale-110' : 'text-gray-400 hover:text-gray-600'}`}>
                            <tab.icon size={24} strokeWidth={isActive ? 2.5 : 2} />
-                           {tab.count !== undefined && tab.count > 0 && <span className="absolute top-2 right-2 bg-red-500 w-3 h-3 rounded-full border-2 border-white"></span>}
+                           {tab.count !== undefined && tab.count > 0 && <span className="absolute top-2 right-2 bg-red-500 w-3 h-3 rounded-full border-2 border-white animate-bounce"></span>}
                        </button>
                    );
                })}
