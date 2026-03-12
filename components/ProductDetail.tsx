@@ -1,26 +1,15 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Heart, Minus, Plus, Check } from 'lucide-react';
+import { ArrowLeft, Heart, Minus, Plus, Check, Syringe } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import { Product } from '../types';
-
-// Custom Crutch Icon Component
-const Crutch = ({ size = 24, className, ...props }: any) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className} {...props}>
-    <g transform="rotate(45 12 12)">
-      <path d="M7 2.5C7 1.67 7.67 1 8.5 1H15.5C16.33 1 17 1.67 17 2.5V4.5H7V2.5Z" />
-      <rect x="8" y="5.5" width="2" height="9" />
-      <rect x="14" y="5.5" width="2" height="9" />
-      <rect x="7" y="8" width="10" height="2.5" rx="0.5" />
-      <path d="M8 13.5H16L13.5 18H10.5L8 13.5Z" />
-      <rect x="11" y="17" width="2" height="4" />
-      <path d="M10.5 21H13.5V22.5C13.5 23.3 12.8 24 12 24C11.2 24 10.5 23.3 10.5 22.5V21Z" fillOpacity="0.6" />
-    </g>
-  </svg>
-);
+import { ImageWithSkeleton } from './ImageWithSkeleton';
 
 interface ProductDetailProps {
   product: Product;
   onBack: () => void;
   onAddToCart: (product: Product, quantity: number, customization: any, note?: string) => void;
+  sugarIcons?: Record<string, string>;
+  sugarTags?: Record<string, string>;
 }
 
 type SugarLevel = '0%' | '25%' | '50%' | '75%' | '100%';
@@ -34,18 +23,28 @@ const SUGAR_OPTIONS: {
     borderColor: string;
     joke: string;
 }[] = [
-  { value: '0%', icon: Crutch, label: '0%', color: 'text-emerald-500', bgColor: 'bg-emerald-50', borderColor: 'border-emerald-200', joke: "Healthy (Boring)" },
-  { value: '25%', icon: Crutch, label: '25%', color: 'text-lime-500', bgColor: 'bg-lime-50', borderColor: 'border-lime-200', joke: "Safe Zone" },
-  { value: '50%', icon: Crutch, label: '50%', color: 'text-yellow-500', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200', joke: "Good Choice" },
-  { value: '75%', icon: Crutch, label: '75%', color: 'text-orange-500', bgColor: 'bg-orange-50', borderColor: 'border-orange-200', joke: "Sweet Baby" },
-  { value: '100%', icon: Crutch, label: '100%', color: 'text-red-500', bgColor: 'bg-red-50', borderColor: 'border-red-200', joke: "លីហ្សា 👩‍🦽" },
+  { value: '0%', icon: Syringe, label: '0%', color: 'text-emerald-500', bgColor: 'bg-emerald-50', borderColor: 'border-emerald-200', joke: "Healthy (Boring)" },
+  { value: '25%', icon: Syringe, label: '25%', color: 'text-lime-500', bgColor: 'bg-lime-50', borderColor: 'border-lime-200', joke: "Safe Zone" },
+  { value: '50%', icon: Syringe, label: '50%', color: 'text-yellow-500', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200', joke: "Good Choice" },
+  { value: '75%', icon: Syringe, label: '75%', color: 'text-orange-500', bgColor: 'bg-orange-50', borderColor: 'border-orange-200', joke: "Sweet Baby" },
+  { value: '100%', icon: Syringe, label: '100%', color: 'text-red-500', bgColor: 'bg-red-50', borderColor: 'border-red-200', joke: "Call 911 🚑" },
 ];
 
-export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToCart }) => {
+export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToCart, sugarIcons = {}, sugarTags = {} }) => {
   const [quantity, setQuantity] = useState(1);
   const [sugarLevel, setSugarLevel] = useState<SugarLevel>('50%');
   const [note, setNote] = useState("");
   const [isAdding, setIsAdding] = useState(false);
+
+  // Check if the product is food or pastry based on categoryId and name
+  const isFood = React.useMemo(() => {
+     const cat = product.categoryId?.toLowerCase() || '';
+     const name = product.name.toLowerCase();
+     const foodKeywords = ['pastry', 'food', 'bakery', 'cake', 'sandwich', 'meal', 'pizza', 'bread', 'croissant', 'toast', 'bagel', 'cookie', 'muffin', 'donut', 'snack'];
+     
+     // Check if category or name contains any food keywords
+     return foodKeywords.some(k => cat.includes(k) || name.includes(k));
+  }, [product.categoryId, product.name]);
 
   const handleIncrement = () => setQuantity(prev => prev + 1);
   const handleDecrement = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
@@ -53,7 +52,9 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, o
   const handleAddToCartClick = () => {
     setIsAdding(true);
     setTimeout(() => {
-      onAddToCart(product, quantity, { sugarLevel }, note);
+      // Don't include sugar level if it's a food item
+      const customization = isFood ? {} : { sugarLevel };
+      onAddToCart(product, quantity, customization, note);
       setIsAdding(false);
     }, 400);
   };
@@ -74,8 +75,13 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, o
         <div className="flex-1 overflow-y-auto pb-32 no-scrollbar bg-white">
           <div className="w-full h-80 relative flex items-center justify-center pt-10 pb-4 overflow-hidden bg-gray-50">
               <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-black/10 to-transparent z-0"></div>
-              <div className="w-56 h-56 rounded-full relative z-10 shadow-2xl shadow-brand-yellow/20 animate-in zoom-in duration-500">
-                  <img src={product.image} alt={product.name} className="w-full h-full object-cover rounded-full border-4 border-white" />
+              <div className="w-56 h-56 rounded-full relative z-10 shadow-2xl shadow-brand-yellow/20 animate-in zoom-in duration-500 bg-white">
+                  <ImageWithSkeleton 
+                    src={product.image} 
+                    alt={product.name} 
+                    className="rounded-full border-4 border-white" 
+                    containerClassName="w-full h-full rounded-full"
+                  />
               </div>
           </div>
 
@@ -83,25 +89,39 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, o
             <h1 className="text-2xl font-bold text-gray-900 mb-2">{product.name}</h1>
             <p className="text-gray-400 text-sm leading-relaxed mb-6">{description}</p>
 
-            <div className="mb-6">
-              <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-2"><h3 className="font-bold text-gray-800">Sugar Level</h3></div>
-                <div className={`text-xs font-bold px-3 py-1 rounded-full border transition-all duration-300 ${selectedOption?.bgColor} ${selectedOption?.color} ${selectedOption?.borderColor} shadow-sm`}>{selectedOption?.joke}</div>
-              </div>
-              
-              <div className="grid grid-cols-5 gap-3">
-                {SUGAR_OPTIONS.map((option) => {
-                  const isSelected = sugarLevel === option.value;
-                  return (
-                    <button key={option.value} onClick={() => setSugarLevel(option.value)} className={`flex flex-col items-center justify-center py-3 px-1 rounded-2xl border-2 transition-all duration-300 relative ${isSelected ? `${option.bgColor} ${option.borderColor} shadow-lg -translate-y-1` : 'bg-white border-transparent hover:bg-gray-50'}`}>
-                      <div className={`mb-2 transition-all duration-300 ${isSelected ? option.color : 'text-gray-300'} ${isSelected ? 'scale-110 drop-shadow-sm' : ''}`}><option.icon size={28} className={isSelected && option.value === '100%' ? 'animate-bounce' : ''} /></div>
-                      <span className={`text-[10px] font-bold text-center transition-colors ${isSelected ? 'text-gray-900' : 'text-gray-400'}`}>{option.label}</span>
-                      {isSelected && <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${option.color.replace('text-', 'bg-')} border-2 border-white animate-in zoom-in duration-200`}></div>}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            {!isFood && (
+                <div className="mb-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center gap-2"><h3 className="font-bold text-gray-800">Sugar Level</h3></div>
+                    <div className={`text-xs font-bold px-3 py-1 rounded-full border transition-all duration-300 ${selectedOption?.bgColor} ${selectedOption?.color} ${selectedOption?.borderColor} shadow-sm`}>{sugarTags[sugarLevel] || selectedOption?.joke}</div>
+                  </div>
+                  
+                  <div className="grid grid-cols-5 gap-3">
+                    {SUGAR_OPTIONS.map((option) => {
+                      const isSelected = sugarLevel === option.value;
+                      const customIcon = sugarIcons[option.value];
+                      const isImg = customIcon?.startsWith('http') || customIcon?.startsWith('data:');
+                      const CustomLucideIcon = !isImg && customIcon && (LucideIcons as any)[customIcon] ? (LucideIcons as any)[customIcon] : null;
+                      
+                      return (
+                        <button key={option.value} onClick={() => setSugarLevel(option.value)} className={`flex flex-col items-center justify-center py-3 px-1 rounded-2xl border-2 transition-all duration-300 relative ${isSelected ? `${option.bgColor} ${option.borderColor} shadow-lg -translate-y-1` : 'bg-white border-transparent hover:bg-gray-50'}`}>
+                          <div className={`mb-2 transition-all duration-300 ${isSelected ? option.color : 'text-gray-300'} ${isSelected ? 'scale-110 drop-shadow-sm' : ''}`}>
+                            {isImg ? (
+                              <img src={customIcon} alt={option.label} className={`w-7 h-7 object-contain ${isSelected && option.value === '100%' ? 'animate-bounce' : ''}`} referrerPolicy="no-referrer" />
+                            ) : CustomLucideIcon ? (
+                              <CustomLucideIcon size={28} className={isSelected && option.value === '100%' ? 'animate-bounce' : ''} />
+                            ) : (
+                              <option.icon size={28} className={isSelected && option.value === '100%' ? 'animate-bounce' : ''} />
+                            )}
+                          </div>
+                          <span className={`text-[10px] font-bold text-center transition-colors ${isSelected ? 'text-gray-900' : 'text-gray-400'}`}>{option.label}</span>
+                          {isSelected && <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${option.color.replace('text-', 'bg-')} border-2 border-white animate-in zoom-in duration-200`}></div>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+            )}
 
             <div className="mb-8">
                <label className="block text-sm font-bold text-gray-800 mb-2">Special Instructions / Notes (Optional)</label>

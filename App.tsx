@@ -5,6 +5,8 @@ import { Product, Category, OrderHistoryItem, OrderStatus, Announcement } from '
 import { MenuItem } from './components/MenuItem';
 import { ProductDetail } from './components/ProductDetail';
 import HistoryChart from './components/HistoryChart';
+import { ImageWithSkeleton } from './components/ImageWithSkeleton';
+import { CoffeeLoader } from './components/CoffeeLoader';
 import * as LucideIcons from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 
@@ -15,9 +17,21 @@ interface CartItem extends Product {
   quantity: number;
   note?: string;
   customization: {
-    sugarLevel: string;
+    sugarLevel?: string;
   };
 }
+
+// --- Constants ---
+
+const AVAILABLE_ICONS = [
+  "Coffee", "CupSoda", "IceCream", "Croissant", "Utensils", 
+  "UtensilsCrossed", "Pizza", "Sandwich", "CakeSlice", "Beer", 
+  "Wine", "GlassWater", "Soup", "Cookie", "Donut", 
+  "Martini", "Fish", "Drumstick", "Apple", "Banana", 
+  "Cherry", "Grape", "Candy", "Lollipop", "Popcorn",
+  "Zap", "Star", "Heart", "ShoppingBag", "Gift",
+  "Syringe", "Snowflake", "Flame", "Droplet", "Droplets", "Thermometer", "Milk"
+];
 
 // --- Admin Components ---
 
@@ -84,10 +98,12 @@ interface AdminDashboardProps {
     refreshData: () => void;
     orders: OrderHistoryItem[];
     announcements: Announcement[];
+    sugarIcons: Record<string, string>;
+    sugarTags: Record<string, string>;
     onLogout: () => void;
 }
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ menuData, refreshData, orders, announcements, onLogout }) => {
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ menuData, refreshData, orders, announcements, sugarIcons, sugarTags, onLogout }) => {
     const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'categories' | 'announcements'>('orders');
     const [loading, setLoading] = useState(false);
 
@@ -106,6 +122,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ menuData, refreshData, 
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
     const [catFormName, setCatFormName] = useState("");
     const [catFormIcon, setCatFormIcon] = useState("Coffee");
+
+    // --- State for Sugar Icons ---
+    const [isSugarIconModalOpen, setIsSugarIconModalOpen] = useState(false);
+    const [sugarFormIcons, setSugarFormIcons] = useState<Record<string, string>>({});
+    const [sugarFormTags, setSugarFormTags] = useState<Record<string, string>>({});
+    const [activeSugarLevel, setActiveSugarLevel] = useState<string | null>(null);
 
     // --- State for Announcements ---
     const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
@@ -279,6 +301,40 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ menuData, refreshData, 
         }
     };
 
+    // --- Sugar Icon Handlers ---
+    const openSugarIconModal = () => {
+        setSugarFormIcons({ ...sugarIcons });
+        setSugarFormTags({ ...sugarTags });
+        setIsSugarIconModalOpen(true);
+    };
+
+    const handleSaveSugarIcons = async () => {
+        setLoading(true);
+        try {
+            const { data: existing } = await supabase.from('categories').select('id').eq('id', 'sugar_levels_config').single();
+            if (existing) {
+                await supabase.from('categories').update({ icon_name: JSON.stringify(sugarFormIcons) }).eq('id', 'sugar_levels_config');
+            } else {
+                await supabase.from('categories').insert({ id: 'sugar_levels_config', name: 'Sugar Levels Config', icon_name: JSON.stringify(sugarFormIcons) });
+            }
+
+            const { data: existingTags } = await supabase.from('categories').select('id').eq('id', 'sugar_tags_config').single();
+            if (existingTags) {
+                await supabase.from('categories').update({ icon_name: JSON.stringify(sugarFormTags) }).eq('id', 'sugar_tags_config');
+            } else {
+                await supabase.from('categories').insert({ id: 'sugar_tags_config', name: 'Sugar Tags Config', icon_name: JSON.stringify(sugarFormTags) });
+            }
+
+            await refreshData();
+            setIsSugarIconModalOpen(false);
+        } catch (error) {
+            console.error("Error saving sugar icons:", error);
+            alert("Failed to save sugar icons.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // --- Announcement Handlers ---
     const openAnnouncementModal = (ann?: Announcement) => {
         if (ann) {
@@ -371,7 +427,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ menuData, refreshData, 
         <div className="min-h-screen bg-gray-100 pb-20 md:pb-0 font-sans w-full relative">
             {loading && (
                 <div className="fixed inset-0 z-[110] bg-white/50 backdrop-blur-sm flex items-center justify-center">
-                    <Loader2 size={48} className="animate-spin text-brand-yellow" />
+                    <CoffeeLoader />
                 </div>
             )}
 
@@ -451,7 +507,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ menuData, refreshData, 
                                         <div className="divide-y divide-gray-50">
                                             {cat.items.map(item => (
                                                 <div key={item.id} className="p-3 flex items-center justify-between hover:bg-gray-50">
-                                                    <div className="flex items-center gap-3"><img src={item.image} alt={item.name} className="w-10 h-10 rounded-lg object-cover bg-gray-100" /><div><p className="font-semibold text-sm text-gray-900">{item.name}</p><p className="text-xs text-brand-yellow font-bold">${item.price.toFixed(2)}</p></div></div>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+                                                            <ImageWithSkeleton src={item.image} alt={item.name} containerClassName="w-full h-full" />
+                                                        </div>
+                                                        <div><p className="font-semibold text-sm text-gray-900">{item.name}</p><p className="text-xs text-brand-yellow font-bold">${item.price.toFixed(2)}</p></div>
+                                                    </div>
                                                     <div className="flex gap-1"><button onClick={() => openProductModal(item, cat.id)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg"><Edit2 size={16} /></button><button onClick={() => handleDeleteProduct(item.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg"><Trash2 size={16} /></button></div>
                                                 </div>
                                             ))}
@@ -463,11 +524,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ menuData, refreshData, 
                     )}
                     {activeTab === 'categories' && (
                         <div>
-                            <button onClick={() => openCategoryModal()} className="w-full md:w-auto px-6 py-3 mb-4 bg-gray-800 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-gray-700 active:scale-95 transition-all"><Plus size={20} /> Add Category</button>
+                            <div className="flex flex-col md:flex-row gap-4 mb-4">
+                                <button onClick={() => openCategoryModal()} className="w-full md:w-auto px-6 py-3 bg-gray-800 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-gray-700 active:scale-95 transition-all"><Plus size={20} /> Add Category</button>
+                                <button onClick={() => openSugarIconModal()} className="w-full md:w-auto px-6 py-3 bg-brand-yellow text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-yellow-400 active:scale-95 transition-all"><ImageIcon size={20} /> Sugar Level Icons</button>
+                            </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {menuData.map(cat => (
                                     <div key={cat.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
-                                        <div className="flex items-center gap-3"><div className="p-2 bg-brand-yellow/10 rounded-lg text-brand-yellow"><Coffee size={24} /></div><div><h3 className="font-bold text-gray-800">{cat.name}</h3><p className="text-xs text-gray-400">{cat.items.length} items</p></div></div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-brand-yellow/10 rounded-lg text-brand-yellow">
+                                                {(() => {
+                                                    const IconComponent = (LucideIcons as any)[cat.iconName] || LucideIcons.Coffee;
+                                                    return <IconComponent size={24} />;
+                                                })()}
+                                            </div>
+                                            <div><h3 className="font-bold text-gray-800">{cat.name}</h3><p className="text-xs text-gray-400">{cat.items.length} items</p></div>
+                                        </div>
                                         <div className="flex gap-1"><button onClick={() => openCategoryModal(cat)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg"><Edit2 size={18} /></button><button onClick={() => handleDeleteCategory(cat.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg"><Trash2 size={18} /></button></div>
                                     </div>
                                 ))}
@@ -480,7 +552,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ menuData, refreshData, 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {announcements.map(ann => (
                                     <div key={ann.id} className={`${ann.colorClass} rounded-2xl overflow-hidden shadow-lg relative h-64 group`}>
-                                        <img src={ann.image} className="absolute inset-0 w-full h-full object-cover opacity-60" alt="Promo" />
+                                        <div className="absolute inset-0">
+                                            <ImageWithSkeleton src={ann.image} alt="Promo" className="w-full h-full object-cover opacity-60" containerClassName="w-full h-full" />
+                                        </div>
                                         <div className="relative z-10 p-6 flex flex-col justify-between h-full"><div className="text-white"><h2 className="text-2xl font-bold mb-1">{ann.title}</h2><p className="text-lg font-light opacity-90">{ann.subtitle}</p></div><div className="flex justify-between items-end"><button onClick={() => openAnnouncementModal(ann)} className="p-2 text-white hover:bg-white/20 rounded"><Edit2 size={16} /></button><button onClick={() => handleDeleteAnnouncement(ann.id)} className="p-2 text-white hover:bg-red-500/50 rounded"><Trash2 size={16} /></button></div></div>
                                     </div>
                                 ))}
@@ -553,7 +627,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ menuData, refreshData, 
                                     />
                                     {prodImagePreview && (
                                         <div className="mt-2 w-20 h-20 rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
-                                            <img src={prodImagePreview} alt="Preview" className="w-full h-full object-cover" />
+                                            <ImageWithSkeleton src={prodImagePreview} alt="Preview" containerClassName="w-full h-full" />
                                         </div>
                                     )}
                                 </div>
@@ -567,8 +641,148 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ menuData, refreshData, 
                     </div>
                 </div>
              )}
-             {isCategoryModalOpen && <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"><div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl view-transition"><h3 className="text-xl font-bold mb-4">{editingCategory ? 'Edit' : 'New'} Category</h3><input className="w-full p-2 border rounded mb-2" value={catFormName} onChange={e => setCatFormName(e.target.value)} placeholder="Name"/><button onClick={handleSaveCategory} className="w-full bg-brand-yellow p-3 rounded-xl mt-4 text-white font-bold">Save</button><button onClick={() => setIsCategoryModalOpen(false)} className="w-full mt-2 text-gray-500">Cancel</button></div></div>}
+             {isCategoryModalOpen && (
+                 <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                     <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl view-transition overflow-y-auto max-h-[90vh]">
+                         <h3 className="text-xl font-bold mb-4">{editingCategory ? 'Edit' : 'New'} Category</h3>
+                         
+                         <div className="space-y-4">
+                             <div>
+                                 <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                 <input 
+                                     className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-yellow outline-none" 
+                                     value={catFormName} 
+                                     onChange={e => setCatFormName(e.target.value)} 
+                                     placeholder="Category Name"
+                                 />
+                             </div>
+
+                             <div>
+                                 <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
+                                 <div className="grid grid-cols-5 gap-2 max-h-48 overflow-y-auto p-1">
+                                     {AVAILABLE_ICONS.map(iconName => {
+                                         const Icon = (LucideIcons as any)[iconName] || LucideIcons.Circle;
+                                         return (
+                                             <button 
+                                                 key={iconName}
+                                                 onClick={() => setCatFormIcon(iconName)}
+                                                 className={`aspect-square rounded-xl flex flex-col items-center justify-center gap-1 transition-all border ${catFormIcon === iconName ? 'bg-brand-yellow text-white border-brand-yellow shadow-lg shadow-yellow-200 scale-105' : 'bg-gray-50 text-gray-500 border-gray-100 hover:bg-gray-100 hover:border-gray-200'}`}
+                                                 title={iconName}
+                                             >
+                                                 <Icon size={20} />
+                                             </button>
+                                         );
+                                     })}
+                                 </div>
+                                 <p className="text-xs text-gray-400 mt-2 text-right">Selected: {catFormIcon}</p>
+                             </div>
+                         </div>
+
+                         <div className="mt-6 flex gap-3">
+                              <button onClick={() => setIsCategoryModalOpen(false)} className="flex-1 py-3 rounded-xl font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors">Cancel</button>
+                              <button onClick={handleSaveCategory} className="flex-1 py-3 rounded-xl font-bold text-white bg-brand-yellow hover:bg-yellow-400 shadow-lg shadow-yellow-200 transition-colors">Save</button>
+                         </div>
+                     </div>
+                 </div>
+             )}
              {isAnnouncementModalOpen && <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"><div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl view-transition"><h3 className="text-xl font-bold mb-4">{editingAnnouncement ? 'Edit' : 'New'} Post</h3><input className="w-full p-2 border rounded mb-2" value={annFormTitle} onChange={e => setAnnFormTitle(e.target.value)} placeholder="Title"/><button onClick={handleSaveAnnouncement} className="w-full bg-brand-yellow p-3 rounded-xl mt-4 text-white font-bold">Save</button><button onClick={() => setIsAnnouncementModalOpen(false)} className="w-full mt-2 text-gray-500">Cancel</button></div></div>}
+             {isSugarIconModalOpen && (
+                 <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                     <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl view-transition overflow-y-auto max-h-[90vh]">
+                         {activeSugarLevel ? (
+                             <div>
+                                 <div className="flex items-center justify-between mb-4">
+                                     <h4 className="font-bold text-lg">Select Icon for {activeSugarLevel}</h4>
+                                     <button onClick={() => setActiveSugarLevel(null)} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200"><X size={16}/></button>
+                                 </div>
+                                 <div className="grid grid-cols-5 gap-2 max-h-64 overflow-y-auto p-1">
+                                     {AVAILABLE_ICONS.map(iconName => {
+                                         const IconComp = (LucideIcons as any)[iconName] || LucideIcons.Circle;
+                                         const isSelected = sugarFormIcons[activeSugarLevel] === iconName;
+                                         return (
+                                             <button 
+                                                 key={iconName}
+                                                 onClick={() => {
+                                                     setSugarFormIcons(prev => ({ ...prev, [activeSugarLevel]: iconName }));
+                                                     setActiveSugarLevel(null);
+                                                 }}
+                                                 className={`aspect-square rounded-xl flex items-center justify-center transition-all border ${isSelected ? 'bg-brand-yellow text-white border-brand-yellow shadow-lg shadow-yellow-200 scale-105' : 'bg-gray-50 text-gray-500 border-gray-100 hover:bg-gray-100 hover:border-gray-200'}`}
+                                                 title={iconName}
+                                             >
+                                                 <IconComp size={24} strokeWidth={1.5} />
+                                             </button>
+                                         )
+                                     })}
+                                 </div>
+                                 <div className="mt-6">
+                                     <label className="block text-sm font-medium text-gray-700 mb-2">Or use Custom Image URL</label>
+                                     <input 
+                                         className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-yellow outline-none text-sm" 
+                                         value={sugarFormIcons[activeSugarLevel]?.startsWith('http') || sugarFormIcons[activeSugarLevel]?.startsWith('data:') ? sugarFormIcons[activeSugarLevel] : ''} 
+                                         onChange={e => setSugarFormIcons(prev => ({ ...prev, [activeSugarLevel]: e.target.value }))} 
+                                         placeholder="https://..."
+                                     />
+                                 </div>
+                             </div>
+                         ) : (
+                             <div>
+                                 <h3 className="text-xl font-bold mb-4">Sugar Level Config</h3>
+                                 <p className="text-sm text-gray-500 mb-4">Customize icons and tags for each sugar level. Leave blank to use defaults.</p>
+                                 
+                                 <div className="space-y-3">
+                                     {['0%', '25%', '50%', '75%', '100%'].map(level => {
+                                         const iconVal = sugarFormIcons[level];
+                                         const tagVal = sugarFormTags[level] || '';
+                                         const isImg = iconVal?.startsWith('http') || iconVal?.startsWith('data:');
+                                         const IconComp = !isImg && iconVal && (LucideIcons as any)[iconVal] ? (LucideIcons as any)[iconVal] : null;
+
+                                         return (
+                                             <div key={level} className="flex flex-col gap-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                                 <div className="flex items-center justify-between">
+                                                     <span className="font-medium text-gray-700 w-16">{level}</span>
+                                                     <button 
+                                                         onClick={() => setActiveSugarLevel(level)}
+                                                         className="flex-1 flex items-center justify-center gap-2 py-2 px-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                                                     >
+                                                         {isImg ? (
+                                                             <img src={iconVal} alt={level} className="w-6 h-6 object-contain" referrerPolicy="no-referrer" />
+                                                         ) : IconComp ? (
+                                                             <IconComp size={20} className="text-gray-700" />
+                                                         ) : (
+                                                             <span className="text-gray-400 text-sm">Select Icon</span>
+                                                         )}
+                                                     </button>
+                                                     {iconVal ? (
+                                                         <button onClick={() => setSugarFormIcons(prev => ({ ...prev, [level]: '' }))} className="ml-2 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                                                             <X size={16} />
+                                                         </button>
+                                                     ) : (
+                                                         <div className="ml-2 w-8"></div>
+                                                     )}
+                                                 </div>
+                                                 <div className="flex items-center gap-2">
+                                                     <span className="text-xs text-gray-500 w-16">Tag</span>
+                                                     <input 
+                                                         className="flex-1 p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-yellow outline-none text-sm" 
+                                                         value={tagVal} 
+                                                         onChange={e => setSugarFormTags(prev => ({ ...prev, [level]: e.target.value }))} 
+                                                         placeholder="e.g. Good Choice"
+                                                     />
+                                                 </div>
+                                             </div>
+                                         )
+                                     })}
+                                 </div>
+
+                                 <div className="mt-6 flex gap-3">
+                                      <button onClick={() => setIsSugarIconModalOpen(false)} className="flex-1 py-3 rounded-xl font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors">Cancel</button>
+                                      <button onClick={handleSaveSugarIcons} className="flex-1 py-3 rounded-xl font-bold text-white bg-brand-yellow hover:bg-yellow-400 shadow-lg shadow-yellow-200 transition-colors">Save</button>
+                                 </div>
+                             </div>
+                         )}
+                     </div>
+                 </div>
+             )}
         </div>
     );
 };
@@ -587,14 +801,17 @@ const HomeView: React.FC<{ onNavigateToMenu: () => void, announcements: Announce
   <div className="h-full w-full overflow-y-auto pb-24 md:pb-8 scroll-smooth">
     {/* Header */}
     <div className="bg-sky-100 relative h-64 md:h-80 w-full overflow-hidden shadow-sm shrink-0">
-       <img 
-          src="https://z-p3-scontent.fpnh18-4.fna.fbcdn.net/v/t39.30808-6/547539350_122129795780913314_3610621525655581649_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=cc71e4&_nc_eui2=AeGFxo9L2bhZiGt9Zkc3YgnziUjq8geLEC6JSOryB4sQLsLwjJDjvK7QKZ2N9kpykpyAGhuywUS3H8pbgYGKtekM&_nc_ohc=wbsYXK4xn5MQ7kNvwGrNJ4c&_nc_oc=AdnwYa0vambkkoA1v6YDExPS9WqVCrhqQJEQwVhUr-XjGof3IMsCWrpF7n4_1bgLKxE&_nc_zt=23&_nc_ht=z-p3-scontent.fpnh18-4.fna&_nc_gid=8bP7DyoaLsf2xcpOZLXBXA&oh=00_AfphpFRnVu5ai4ULyYlEFw0NWthuxcrqWwJNpO2CatJVpw&oe=69617185" 
-          className="w-full h-full object-cover"
-          alt="KAINOR Coffee Branch"
-       />
-       <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-transparent to-black/40" />
+       <div className="absolute inset-0">
+           <ImageWithSkeleton 
+              src="https://z-p3-scontent.fpnh18-4.fna.fbcdn.net/v/t39.30808-6/547539350_122129795780913314_3610621525655581649_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=cc71e4&_nc_eui2=AeGFxo9L2bhZiGt9Zkc3YgnziUjq8geLEC6JSOryB4sQLsLwjJDjvK7QKZ2N9kpykpyAGhuywUS3H8pbgYGKtekM&_nc_ohc=wbsYXK4xn5MQ7kNvwGrNJ4c&_nc_oc=AdnwYa0vambkkoA1v6YDExPS9WqVCrhqQJEQwVhUr-XjGof3IMsCWrpF7n4_1bgLKxE&_nc_zt=23&_nc_ht=z-p3-scontent.fpnh18-4.fna&_nc_gid=8bP7DyoaLsf2xcpOZLXBXA&oh=00_AfphpFRnVu5ai4ULyYlEFw0NWthuxcrqWwJNpO2CatJVpw&oe=69617185" 
+              containerClassName="w-full h-full"
+              className="object-cover"
+              alt="KAINOR Coffee Branch"
+           />
+       </div>
+       <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-transparent to-black/40 pointer-events-none" />
        
-       <div className="absolute bottom-8 left-6 md:left-12 text-white">
+       <div className="absolute bottom-8 left-6 md:left-12 text-white z-10">
            <h2 className="text-3xl md:text-5xl font-bold mb-2 drop-shadow-lg">{greeting}</h2>
            <p className="text-white/95 font-medium text-lg drop-shadow-md">Welcome to KAINOR Coffee & Food</p>
        </div>
@@ -617,11 +834,14 @@ const HomeView: React.FC<{ onNavigateToMenu: () => void, announcements: Announce
                         className={`${ann.colorClass} rounded-3xl overflow-hidden shadow-lg relative h-64 flex items-center justify-center group cursor-pointer transition-transform hover:scale-[1.02]`}
                         onClick={onNavigateToMenu}
                     >
-                        <img 
-                            src={ann.image} 
-                            className="absolute inset-0 w-full h-full object-cover opacity-60 transition-transform duration-500 group-hover:scale-105" 
-                            alt={ann.title} 
-                        />
+                        <div className="absolute inset-0">
+                            <ImageWithSkeleton 
+                                src={ann.image} 
+                                className="w-full h-full object-cover opacity-60 transition-transform duration-500 group-hover:scale-105" 
+                                containerClassName="w-full h-full"
+                                alt={ann.title} 
+                            />
+                        </div>
                         <div className="relative z-10 text-center text-white p-6 w-full">
                             <h2 className="text-3xl font-bold mb-2 drop-shadow-md">{ann.title}</h2>
                             <p className="text-xl font-light opacity-90 drop-shadow-sm">{ann.subtitle}</p>
@@ -745,7 +965,7 @@ const MenuView: React.FC<{ activeCategory: string, setActiveCategory: (id: strin
                             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 p-4 md:p-8">
                                 {cat.items.map(item => (
                                     <div key={item.id} className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm hover:shadow-md transition-all">
-                                        <MenuItem item={item} onClick={() => onProductClick(item)} className="h-full" />
+                                        <MenuItem item={item} onClick={() => onProductClick({...item, categoryId: cat.id})} className="h-full" />
                                     </div>
                                 ))}
                             </div>
@@ -783,7 +1003,7 @@ const CartView: React.FC<{ items: CartItem[], onRemove: (id: string) => void, on
                  {items.map(item => (
                      <div key={item.cartId} className="bg-white p-4 rounded-xl flex gap-4 shadow-sm border border-gray-100 items-start">
                          <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                             <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                             <ImageWithSkeleton src={item.image} alt={item.name} containerClassName="w-full h-full" />
                          </div>
                          <div className="flex-1 min-w-0">
                              <div className="flex justify-between items-start">
@@ -791,7 +1011,7 @@ const CartView: React.FC<{ items: CartItem[], onRemove: (id: string) => void, on
                                      <h4 className="font-bold text-gray-800 text-lg line-clamp-1">{item.name}</h4>
                                      <p className="text-sm text-gray-500 mt-1">
                                         <span className="font-bold text-brand-yellow mr-1">{item.quantity}x</span> 
-                                        Sugar: {item.customization.sugarLevel}
+                                        {item.customization.sugarLevel && `Sugar: ${item.customization.sugarLevel}`}
                                      </p>
                                      {item.note && (
                                          <p className="text-xs text-blue-500 italic mt-1 bg-blue-50 inline-block px-2 py-1 rounded border border-blue-100">
@@ -828,8 +1048,8 @@ const CartView: React.FC<{ items: CartItem[], onRemove: (id: string) => void, on
 const AccountView = ({ onAdminLogin }: { onAdminLogin: () => void }) => (
   <div className="p-4 bg-white h-full pb-20 flex flex-col items-center pt-10 overflow-y-auto">
       <div className="w-full max-w-lg mx-auto flex flex-col items-center">
-        <div className="w-28 h-28 bg-brand-yellow rounded-full p-1 mb-6 shadow-xl shadow-yellow-100">
-            <img src="https://picsum.photos/200/200?random=99" className="w-full h-full rounded-full object-cover border-4 border-white" alt="Profile" />
+        <div className="w-28 h-28 bg-brand-yellow rounded-full p-1 mb-6 shadow-xl shadow-yellow-100 relative">
+            <ImageWithSkeleton src="https://picsum.photos/200/200?random=99" alt="Profile" className="rounded-full border-4 border-white" containerClassName="w-full h-full rounded-full" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900">Coffee Lover</h2>
         <p className="text-gray-500 mb-8">+855 12 345 678</p>
@@ -869,6 +1089,8 @@ const App = () => {
   const [menuData, setMenuData] = useState<Category[]>(MENU_DATA);
   const [orders, setOrders] = useState<OrderHistoryItem[]>(MOCK_HISTORY);
   const [announcements, setAnnouncements] = useState<Announcement[]>(INITIAL_ANNOUNCEMENTS);
+  const [sugarIcons, setSugarIcons] = useState<Record<string, string>>({});
+  const [sugarTags, setSugarTags] = useState<Record<string, string>>({});
   
   // Admin State
   const [showAdminLogin, setShowAdminLogin] = useState(false);
@@ -887,7 +1109,28 @@ const App = () => {
         if (catRes.data && prodRes.data) {
             const categories = catRes.data;
             const products = prodRes.data;
-            const structuredMenu = categories.map((cat: any) => ({
+            
+            const sugarConfig = categories.find((c: any) => c.id === 'sugar_levels_config');
+            if (sugarConfig && sugarConfig.icon_name) {
+                try {
+                    setSugarIcons(JSON.parse(sugarConfig.icon_name));
+                } catch (e) {
+                    console.error("Failed to parse sugar icons config", e);
+                }
+            }
+
+            const sugarTagsConfig = categories.find((c: any) => c.id === 'sugar_tags_config');
+            if (sugarTagsConfig && sugarTagsConfig.icon_name) {
+                try {
+                    setSugarTags(JSON.parse(sugarTagsConfig.icon_name));
+                } catch (e) {
+                    console.error("Failed to parse sugar tags config", e);
+                }
+            }
+
+            const structuredMenu = categories
+                .filter((cat: any) => cat.id !== 'sugar_levels_config' && cat.id !== 'sugar_tags_config')
+                .map((cat: any) => ({
                 id: cat.id,
                 name: cat.name,
                 iconName: cat.icon_name || 'Coffee',
@@ -949,7 +1192,7 @@ const App = () => {
     const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     // Include notes in summary for DB
     const itemsSummary = cartItems.map(item => {
-        let text = `${item.quantity}x ${item.name} (${item.customization.sugarLevel})`;
+        let text = `${item.quantity}x ${item.name} ${item.customization.sugarLevel ? `(${item.customization.sugarLevel})` : ''}`;
         if(item.note) text += ` [Note: ${item.note}]`;
         return text;
     });
@@ -973,7 +1216,7 @@ const App = () => {
         
         const orderId = data[0]?.readable_id || data[0]?.id || 'NEW';
         const itemsList = cartItems.map(item => {
-            let line = `☕ <b>${item.quantity}x ${item.name}</b> (🍬 ${item.customization.sugarLevel})`;
+            let line = `☕ <b>${item.quantity}x ${item.name}</b> ${item.customization.sugarLevel ? `(🍬 ${item.customization.sugarLevel})` : ''}`;
             if (item.note) line += `\n   ✏️ <i>Note: ${item.note}</i>`;
             return line;
         }).join('\n');
@@ -1012,8 +1255,8 @@ const App = () => {
 
   const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
-  if (appLoading) return <div className="h-screen w-full flex items-center justify-center bg-gray-50 flex-col gap-4"><Loader2 size={48} className="animate-spin text-brand-yellow" /><p className="text-gray-500 font-medium">Loading Menu...</p></div>;
-  if (isAdminLoggedIn) return <AdminDashboard menuData={menuData} refreshData={fetchData} orders={orders} announcements={announcements} onLogout={() => setIsAdminLoggedIn(false)} />;
+  if (appLoading) return <div className="h-screen w-full flex items-center justify-center bg-gray-50 flex-col gap-4"><CoffeeLoader /></div>;
+  if (isAdminLoggedIn) return <AdminDashboard menuData={menuData} refreshData={fetchData} orders={orders} announcements={announcements} sugarIcons={sugarIcons} sugarTags={sugarTags} onLogout={() => setIsAdminLoggedIn(false)} />;
 
   return (
     <div className="flex h-screen w-full bg-gray-50 overflow-hidden font-sans">
@@ -1041,8 +1284,8 @@ const App = () => {
          </nav>
          <div className="p-6">
              <div className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 border border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors">
-                 <img src="https://picsum.photos/200/200?random=99" alt="User" className="w-10 h-10 rounded-full object-cover" />
-                 <div className="overflow-hidden">
+                 <ImageWithSkeleton src="https://picsum.photos/200/200?random=99" alt="User" className="rounded-full" containerClassName="w-10 h-10 rounded-full" />
+                 <div className="overflow-hidden ml-3">
                      <p className="text-sm font-bold truncate text-gray-900">Coffee Lover</p>
                      <p className="text-xs text-gray-400 truncate">Member</p>
                  </div>
@@ -1064,7 +1307,7 @@ const App = () => {
       {showAdminLogin && <AdminLogin onLogin={() => { setIsAdminLoggedIn(true); setShowAdminLogin(false); }} onCancel={() => setShowAdminLogin(false)} />}
 
       {/* Product Detail Overlay */}
-      {selectedProduct && <ProductDetail product={selectedProduct} onBack={() => setSelectedProduct(null)} onAddToCart={handleAddToCart} />}
+      {selectedProduct && <ProductDetail product={selectedProduct} onBack={() => setSelectedProduct(null)} onAddToCart={handleAddToCart} sugarIcons={sugarIcons} sugarTags={sugarTags} />}
 
       {/* Mobile Bottom Navigation */}
       <div className="fixed bottom-6 left-6 right-6 z-50 md:hidden">

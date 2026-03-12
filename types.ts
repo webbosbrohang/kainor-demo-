@@ -6,6 +6,7 @@ export interface Product {
   image: string;
   description?: string;
   isBestSeller?: boolean;
+  categoryId?: string;
 }
 
 export interface Category {
